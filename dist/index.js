@@ -30426,13 +30426,13 @@ function parseFallbackResponse(rawResponse) {
     let currentFinding = null;
     for (const line of lines) {
         // Look for patterns like "Line 42:" or "L42:" or ":42:"
-        const lineMatch = line.match(/(?:line\s*|l|:)(\d+)/i);
+        const lineMatch = line.match(/\d+/);
         if (lineMatch) {
             if (currentFinding && currentFinding.description) {
                 findings.push(currentFinding);
             }
             currentFinding = {
-                line: parseInt(lineMatch[1], 10),
+                line: parseInt(lineMatch[0], 10),
                 severity: line.toLowerCase().includes('critical') || line.toLowerCase().includes('bug') ? 'critical' : 'warning',
                 category: 'improvement',
                 title: line.substring(0, 80),
@@ -30474,9 +30474,9 @@ exports.buildSummaryPrompt = buildSummaryPrompt;
 exports.buildSummaryBody = buildSummaryBody;
 const types_1 = __nccwpck_require__(2210);
 function getDefaultSystemPrompt(language) {
-    const langInstruction = language === 'fr'
-        ? 'Tu DOIS rédiger toutes tes réponses en français.'
-        : 'You MUST write all responses in English.';
+    const langInstruction = language && language !== 'en'
+        ? `You MUST write all your review comments, titles, descriptions, and suggestions in ${language}. Code in suggestion blocks must remain in the original programming language.`
+        : '';
     return `You are Reviewer, an expert senior code reviewer specializing in identifying bugs, security vulnerabilities, and correctness issues in code diffs. Your primary function is to analyze changes and provide precise, actionable feedback that prevents defects from reaching production.
 
 ## Core Principles:
@@ -30487,7 +30487,7 @@ function getDefaultSystemPrompt(language) {
 4. **Minimal Scope**: Review ONLY the changed lines. Do not critique pre-existing code unless the change introduces a regression.
 5. **Actionable Output**: Every finding must explain the concrete failure scenario — when, how, and under what inputs the bug manifests.
 
-${langInstruction}
+${langInstruction ? `\n${langInstruction}` : ''}
 
 <review_guidelines>
 
@@ -30641,10 +30641,10 @@ Analyze the diff above for the file \`${filePath}\`. Focus on bugs, security vul
     return { system, user };
 }
 function buildSummaryPrompt(prTitle, filesSummary, allFindingsSummary, language) {
-    const langInstruction = language === 'fr'
-        ? 'Tu DOIS rédiger toutes tes réponses en français.'
-        : 'You MUST write all responses in English.';
-    const system = `You are Summarizer, an expert code reviewer that synthesizes file-level review findings into a concise pull request summary. ${langInstruction}
+    const langInstruction = language && language !== 'en'
+        ? `You MUST write all your review comments, titles, descriptions, and suggestions in ${language}. Code in suggestion blocks must remain in the original programming language.`
+        : '';
+    const system = `You are Summarizer, an expert code reviewer that synthesizes file-level review findings into a concise pull request summary.${langInstruction ? ` ${langInstruction}` : ''}
 
 ## Core Principles:
 

@@ -1,9 +1,9 @@
 import { REVIEW_MARKER } from '../review/types';
 
 export function getDefaultSystemPrompt(language: string): string {
-  const langInstruction = language === 'fr'
-    ? 'Tu DOIS rédiger toutes tes réponses en français.'
-    : 'You MUST write all responses in English.';
+  const langInstruction = language && language !== 'en'
+    ? `You MUST write all your review comments, titles, descriptions, and suggestions in ${language}. Code in suggestion blocks must remain in the original programming language.`
+    : '';
 
   return `You are Reviewer, an expert senior code reviewer specializing in identifying bugs, security vulnerabilities, and correctness issues in code diffs. Your primary function is to analyze changes and provide precise, actionable feedback that prevents defects from reaching production.
 
@@ -15,7 +15,7 @@ export function getDefaultSystemPrompt(language: string): string {
 4. **Minimal Scope**: Review ONLY the changed lines. Do not critique pre-existing code unless the change introduces a regression.
 5. **Actionable Output**: Every finding must explain the concrete failure scenario — when, how, and under what inputs the bug manifests.
 
-${langInstruction}
+${langInstruction ? `\n${langInstruction}` : ''}
 
 <review_guidelines>
 
@@ -183,11 +183,11 @@ export function buildSummaryPrompt(
   allFindingsSummary: string,
   language: string
 ): { system: string; user: string } {
-  const langInstruction = language === 'fr'
-    ? 'Tu DOIS rédiger toutes tes réponses en français.'
-    : 'You MUST write all responses in English.';
+  const langInstruction = language && language !== 'en'
+    ? `You MUST write all your review comments, titles, descriptions, and suggestions in ${language}. Code in suggestion blocks must remain in the original programming language.`
+    : '';
 
-  const system = `You are Summarizer, an expert code reviewer that synthesizes file-level review findings into a concise pull request summary. ${langInstruction}
+  const system = `You are Summarizer, an expert code reviewer that synthesizes file-level review findings into a concise pull request summary.${langInstruction ? ` ${langInstruction}` : ''}
 
 ## Core Principles:
 

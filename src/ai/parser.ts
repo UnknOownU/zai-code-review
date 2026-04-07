@@ -153,13 +153,13 @@ function parseFallbackResponse(rawResponse: string): AIFileReviewResponse {
 
   for (const line of lines) {
     // Look for patterns like "Line 42:" or "L42:" or ":42:"
-    const lineMatch = line.match(/(?:line\s*|l|:)(\d+)/i);
+    const lineMatch = line.match(/\d+/);
     if (lineMatch) {
       if (currentFinding && currentFinding.description) {
         findings.push(currentFinding as AIFinding);
       }
       currentFinding = {
-        line: parseInt(lineMatch[1], 10),
+        line: parseInt(lineMatch[0], 10),
         severity: line.toLowerCase().includes('critical') || line.toLowerCase().includes('bug') ? 'critical' : 'warning',
         category: 'improvement',
         title: line.substring(0, 80),
