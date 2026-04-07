@@ -1,0 +1,8 @@
+{
+  "aliases": {
+    "@game": "file:///roblox/game"
+  },
+  "require": {
+    "mode": "relativeToFile"
+  }
+}

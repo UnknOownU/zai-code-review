@@ -1,0 +1,53 @@
+name: 'Z.ai Code Review'
+description: 'AI-powered code review using Z.ai API with inline comments, code suggestions, and PR summaries'
+author: 'Z.ai'
+inputs:
+  ZAI_API_KEY:
+    description: 'Z.ai API key'
+    required: true
+  ZAI_MODEL:
+    description: 'Z.ai model to use'
+    required: false
+    default: 'glm-4.7'
+  ZAI_SYSTEM_PROMPT:
+    description: 'Custom system prompt for the AI reviewer'
+    required: false
+    default: ''
+  ZAI_REVIEWER_NAME:
+    description: 'Display name for the reviewer in comments'
+    required: false
+    default: 'Z.ai Code Review'
+  GITHUB_TOKEN:
+    description: 'GitHub token for API access'
+    required: false
+    default: '${{ github.token }}'
+  max_files:
+    description: 'Maximum number of files to analyze per PR'
+    required: false
+    default: '20'
+  exclude_patterns:
+    description: 'Comma-separated file patterns to exclude from review'
+    required: false
+    default: 'package-lock.json,yarn.lock,pnpm-lock.yaml,*.min.js,*.min.css,*.bundle.js,*.map'
+  language:
+    description: 'Language for review comments (en/fr)'
+    required: false
+    default: 'en'
+  auto_approve:
+    description: 'Automatically approve PR if no issues found'
+    required: false
+    default: 'false'
+  max_comments:
+    description: 'Maximum number of inline comments to post per review'
+    required: false
+    default: '50'
+  ai_base_url:
+    description: 'Base URL for the Z.ai API'
+    required: false
+    default: 'https://api.z.ai'
+runs:
+  using: 'node20'
+  main: 'dist/index.js'
+branding:
+  icon: 'eye'
+  color: 'blue'
