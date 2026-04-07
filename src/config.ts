@@ -68,6 +68,26 @@ export function parseConfig(): ActionConfig {
     throw new Error('Could not determine pull request number. Ensure this action runs on a pull_request event.');
   }
 
+  const validModels = [
+    'glm-5.1', 'glm-5', 'glm-5-turbo', 'glm-4.7', 'glm-4.7-flash', 'glm-4.7-flashx',
+    'glm-4.6', 'glm-4.5', 'glm-4.5-air', 'glm-4.5-x', 'glm-4.5-airx', 'glm-4.5-flash',
+    'glm-4-32b-0414-128k',
+  ];
+  if (!validModels.includes(zaiModel.toLowerCase())) {
+    core.warning(
+      `Model '${zaiModel}' is not in the known Z.ai model list (${validModels.join(', ')}). ` +
+      'Proceeding anyway — the API will reject it if invalid.'
+    );
+  }
+
+  if (maxFiles < 1 || maxFiles > 100) {
+    core.warning(`max_files=${maxFiles} is outside the recommended range (1-100). Using ${Math.min(Math.max(maxFiles, 1), 100)}.`);
+  }
+
+  if (maxComments < 1 || maxComments > 200) {
+    core.warning(`max_comments=${maxComments} is outside the recommended range (1-200). Using ${Math.min(Math.max(maxComments, 1), 200)}.`);
+  }
+
   core.info(`Configuration loaded:`);
   core.info(`  Repository: ${repoOwner}/${repoName}`);
   core.info(`  PR Number: ${pullNumber}`);

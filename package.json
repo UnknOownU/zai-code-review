@@ -6,7 +6,8 @@
   "scripts": {
     "build": "ncc build src/index.ts -o dist --source-map --license licenses.txt",
     "lint": "tsc --noEmit",
-    "check": "tsc --noEmit && npm run build"
+    "test": "vitest run",
+    "check": "tsc --noEmit && vitest run && npm run build"
   },
   "keywords": [
     "github-action",
@@ -24,6 +25,7 @@
   "devDependencies": {
     "@types/node": "^20.11.0",
     "@vercel/ncc": "^0.38.3",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "vitest": "^4.1.3"
   }
 }
