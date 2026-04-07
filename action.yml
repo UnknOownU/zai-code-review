@@ -45,6 +45,10 @@ inputs:
     description: 'Base URL for the Z.ai API'
     required: false
     default: 'https://api.z.ai'
+  use_coding_plan:
+    description: 'Use the GLM Coding Plan endpoint instead of the standard API'
+    required: false
+    default: 'true'
 runs:
   using: 'node20'
   main: 'dist/index.js'

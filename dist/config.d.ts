@@ -15,5 +15,6 @@ export interface ActionConfig {
     excludePatterns: string[];
     language: string;
     autoApprove: boolean;
+    useCodingPlan: boolean;
 }
 export declare function parseConfig(): ActionConfig;

@@ -1563,12 +1563,14 @@ class ZaiClient {
     model;
     maxRetries;
     timeout;
+    useCodingPlan;
     constructor(config) {
         this.apiKey = config.apiKey;
         this.baseUrl = config.baseUrl.replace(/\/$/, '');
         this.model = config.model;
         this.maxRetries = config.maxRetries ?? 3;
         this.timeout = config.timeout ?? 60000;
+        this.useCodingPlan = config.useCodingPlan ?? true;
     }
     async chatCompletion(messages, options) {
         const body = {
@@ -1580,7 +1582,10 @@ class ZaiClient {
         if (options?.responseFormat === 'json') {
             body.response_format = { type: 'json_object' };
         }
-        const url = `${this.baseUrl}/api/coding/paas/v4/chat/completions`;
+        const apiPath = this.useCodingPlan
+            ? '/api/coding/paas/v4/chat/completions'
+            : '/api/paas/v4/chat/completions';
+        const url = `${this.baseUrl}${apiPath}`;
         const bodyStr = JSON.stringify(body);
         let lastError = null;
         for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
@@ -2229,6 +2234,7 @@ function parseConfig() {
         .filter(p => p.length > 0);
     const language = core.getInput('language') || 'en';
     const autoApprove = (core.getInput('auto_approve') || 'false').toLowerCase() === 'true';
+    const useCodingPlan = (core.getInput('use_coding_plan') || 'true').toLowerCase() === 'true';
     if (!zaiApiKey) {
         throw new Error('ZAI_API_KEY is required but not provided.');
     }
@@ -2250,6 +2256,7 @@ function parseConfig() {
     core.info(`  Language: ${language}`);
     core.info(`  Auto-approve: ${autoApprove}`);
     core.info(`  Exclude patterns: ${excludePatterns.join(', ')}`);
+    core.info(`  Use Coding Plan: ${useCodingPlan}`);
     return {
         zaiApiKey,
         zaiModel,
@@ -2267,6 +2274,7 @@ function parseConfig() {
         excludePatterns,
         language,
         autoApprove,
+        useCodingPlan,
     };
 }
 
@@ -2859,6 +2867,7 @@ async function run() {
         apiKey: config.zaiApiKey,
         baseUrl: config.zaiBaseUrl,
         model: config.zaiModel,
+        useCodingPlan: config.useCodingPlan,
     });
     core.info('Cleaning up old review comments...');
     await (0, comments_1.cleanOldComments)(octokit, config.repoOwner, config.repoName, config.pullNumber);

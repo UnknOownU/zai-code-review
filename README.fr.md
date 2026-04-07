@@ -58,6 +58,7 @@ jobs:
 | `auto_approve` | boolean | `false` | Approuver automatiquement la PR si aucun probleme n'est trouve. |
 | `max_comments` | number | `50` | Nombre maximum de commentaires inline par revue. |
 | `ai_base_url` | string | `https://api.z.ai` | URL de base de l'API Z.ai. |
+| `use_coding_plan` | boolean | `true` | Utiliser l'endpoint GLM Coding Plan (`/api/coding/paas/v4`) au lieu de l'API standard. |
 
 ## Fonctionnement
 

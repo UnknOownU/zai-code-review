@@ -23,6 +23,7 @@ export interface ActionConfig {
   excludePatterns: string[];
   language: string;
   autoApprove: boolean;
+  useCodingPlan: boolean;
 }
 
 export function parseConfig(): ActionConfig {
@@ -50,6 +51,7 @@ export function parseConfig(): ActionConfig {
     .filter(p => p.length > 0);
   const language = core.getInput('language') || 'en';
   const autoApprove = (core.getInput('auto_approve') || 'false').toLowerCase() === 'true';
+  const useCodingPlan = (core.getInput('use_coding_plan') || 'true').toLowerCase() === 'true';
 
   if (!zaiApiKey) {
     throw new Error('ZAI_API_KEY is required but not provided.');
@@ -73,6 +75,7 @@ export function parseConfig(): ActionConfig {
   core.info(`  Language: ${language}`);
   core.info(`  Auto-approve: ${autoApprove}`);
   core.info(`  Exclude patterns: ${excludePatterns.join(', ')}`);
+  core.info(`  Use Coding Plan: ${useCodingPlan}`);
 
   return {
     zaiApiKey,
@@ -91,5 +94,6 @@ export function parseConfig(): ActionConfig {
     excludePatterns,
     language,
     autoApprove,
+    useCodingPlan,
   };
 }

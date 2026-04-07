@@ -8,6 +8,7 @@ interface AIClientConfig {
     model: string;
     maxRetries?: number;
     timeout?: number;
+    useCodingPlan?: boolean;
 }
 /**
  * Z.ai API Client with retry logic, timeout, and error handling.
@@ -18,6 +19,7 @@ export declare class ZaiClient {
     private model;
     private maxRetries;
     private timeout;
+    private useCodingPlan;
     constructor(config: AIClientConfig);
     chatCompletion(messages: ChatMessage[], options?: {
         temperature?: number;

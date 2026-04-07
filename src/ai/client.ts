@@ -38,6 +38,7 @@ interface AIClientConfig {
   model: string;
   maxRetries?: number;
   timeout?: number;
+  useCodingPlan?: boolean;
 }
 
 /**
@@ -49,6 +50,7 @@ export class ZaiClient {
   private model: string;
   private maxRetries: number;
   private timeout: number;
+  private useCodingPlan: boolean;
 
   constructor(config: AIClientConfig) {
     this.apiKey = config.apiKey;
@@ -56,6 +58,7 @@ export class ZaiClient {
     this.model = config.model;
     this.maxRetries = config.maxRetries ?? 3;
     this.timeout = config.timeout ?? 60000;
+    this.useCodingPlan = config.useCodingPlan ?? true;
   }
 
   async chatCompletion(
@@ -73,7 +76,10 @@ export class ZaiClient {
       body.response_format = { type: 'json_object' };
     }
 
-    const url = `${this.baseUrl}/api/coding/paas/v4/chat/completions`;
+    const apiPath = this.useCodingPlan
+      ? '/api/coding/paas/v4/chat/completions'
+      : '/api/paas/v4/chat/completions';
+    const url = `${this.baseUrl}${apiPath}`;
     const bodyStr = JSON.stringify(body);
 
     let lastError: Error | null = null;
