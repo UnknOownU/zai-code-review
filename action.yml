@@ -8,7 +8,7 @@ inputs:
   ZAI_MODEL:
     description: 'Z.ai model to use'
     required: false
-    default: 'glm-4.7'
+    default: 'glm-5.1'
   ZAI_SYSTEM_PROMPT:
     description: 'Custom system prompt for the AI reviewer'
     required: false
@@ -30,7 +30,7 @@ inputs:
     required: false
     default: 'package-lock.json,yarn.lock,pnpm-lock.yaml,*.min.js,*.min.css,*.bundle.js,*.map'
   language:
-    description: 'Language for review comments (en/fr)'
+    description: 'Language for review comments and Accept-Language header (e.g. en, fr, de, ja, zh)'
     required: false
     default: 'en'
   auto_approve:
@@ -49,6 +49,10 @@ inputs:
     description: 'Use the GLM Coding Plan endpoint instead of the standard API'
     required: false
     default: 'true'
+  enable_thinking:
+    description: 'Enable chain-of-thought reasoning for deeper analysis (increases token usage)'
+    required: false
+    default: 'false'
 runs:
   using: 'node20'
   main: 'dist/index.js'

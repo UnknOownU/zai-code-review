@@ -48,7 +48,7 @@ jobs:
 | Parametre | Type | Defaut | Description |
 |---|---|---|---|
 | `ZAI_API_KEY` | string | **Requis** | Cle API Z.ai pour l'authentification. |
-| `ZAI_MODEL` | string | `glm-4.7` | Modele Z.ai a utiliser pour l'analyse. |
+| `ZAI_MODEL` | string | `glm-5.1` | Modele Z.ai a utiliser pour l'analyse. |
 | `ZAI_SYSTEM_PROMPT` | string | `""` | Remplacement optionnel des instructions systeme de l'IA. |
 | `ZAI_REVIEWER_NAME` | string | `Z.ai Code Review` | Nom affiche dans les commentaires de revue. |
 | `GITHUB_TOKEN` | string | `${{ github.token }}` | Token GitHub pour l'acces API. Necessite `pull-requests: write`. |
@@ -59,6 +59,7 @@ jobs:
 | `max_comments` | number | `50` | Nombre maximum de commentaires inline par revue. |
 | `ai_base_url` | string | `https://api.z.ai` | URL de base de l'API Z.ai. |
 | `use_coding_plan` | boolean | `true` | Utiliser l'endpoint GLM Coding Plan (`/api/coding/paas/v4`) au lieu de l'API standard. |
+| `enable_thinking` | boolean | `false` | Activer le raisonnement en chaine de pensee pour une analyse plus approfondie (augmente la consommation de tokens). |
 
 ## Fonctionnement
 

@@ -20,6 +20,8 @@ async function run(): Promise<void> {
     baseUrl: config.zaiBaseUrl,
     model: config.zaiModel,
     useCodingPlan: config.useCodingPlan,
+    language: config.language,
+    enableThinking: config.enableThinking,
   });
 
   core.info('Cleaning up old review comments...');

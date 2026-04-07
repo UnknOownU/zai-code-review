@@ -16,5 +16,6 @@ export interface ActionConfig {
     language: string;
     autoApprove: boolean;
     useCodingPlan: boolean;
+    enableThinking: boolean;
 }
 export declare function parseConfig(): ActionConfig;

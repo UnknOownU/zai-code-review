@@ -1564,6 +1564,8 @@ class ZaiClient {
     maxRetries;
     timeout;
     useCodingPlan;
+    language;
+    enableThinking;
     constructor(config) {
         this.apiKey = config.apiKey;
         this.baseUrl = config.baseUrl.replace(/\/$/, '');
@@ -1571,6 +1573,8 @@ class ZaiClient {
         this.maxRetries = config.maxRetries ?? 3;
         this.timeout = config.timeout ?? 60000;
         this.useCodingPlan = config.useCodingPlan ?? true;
+        this.language = config.language ?? 'en';
+        this.enableThinking = config.enableThinking ?? false;
     }
     async chatCompletion(messages, options) {
         const body = {
@@ -1581,6 +1585,9 @@ class ZaiClient {
         };
         if (options?.responseFormat === 'json') {
             body.response_format = { type: 'json_object' };
+        }
+        if (this.enableThinking) {
+            body.thinking = { type: 'enabled' };
         }
         const apiPath = this.useCodingPlan
             ? '/api/coding/paas/v4/chat/completions'
@@ -1634,6 +1641,7 @@ class ZaiClient {
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${this.apiKey}`,
+                    'Accept-Language': this.language,
                     'Content-Length': Buffer.byteLength(body),
                     'User-Agent': 'zai-code-review-action/1.0.0',
                 },
@@ -2213,7 +2221,7 @@ const core = __importStar(__nccwpck_require__(391));
 const github = __importStar(__nccwpck_require__(923));
 function parseConfig() {
     const zaiApiKey = core.getInput('ZAI_API_KEY', { required: true });
-    const zaiModel = core.getInput('ZAI_MODEL') || 'glm-4.7';
+    const zaiModel = core.getInput('ZAI_MODEL') || 'glm-5.1';
     const zaiBaseUrl = core.getInput('ai_base_url') || 'https://api.z.ai';
     const zaiSystemPrompt = core.getInput('ZAI_SYSTEM_PROMPT') || '';
     const reviewerName = core.getInput('ZAI_REVIEWER_NAME') || 'Z.ai Code Review';
@@ -2235,6 +2243,7 @@ function parseConfig() {
     const language = core.getInput('language') || 'en';
     const autoApprove = (core.getInput('auto_approve') || 'false').toLowerCase() === 'true';
     const useCodingPlan = (core.getInput('use_coding_plan') || 'true').toLowerCase() === 'true';
+    const enableThinking = (core.getInput('enable_thinking') || 'false').toLowerCase() === 'true';
     if (!zaiApiKey) {
         throw new Error('ZAI_API_KEY is required but not provided.');
     }
@@ -2257,6 +2266,7 @@ function parseConfig() {
     core.info(`  Auto-approve: ${autoApprove}`);
     core.info(`  Exclude patterns: ${excludePatterns.join(', ')}`);
     core.info(`  Use Coding Plan: ${useCodingPlan}`);
+    core.info(`  Enable Thinking: ${enableThinking}`);
     return {
         zaiApiKey,
         zaiModel,
@@ -2275,6 +2285,7 @@ function parseConfig() {
         language,
         autoApprove,
         useCodingPlan,
+        enableThinking,
     };
 }
 
@@ -2868,6 +2879,8 @@ async function run() {
         baseUrl: config.zaiBaseUrl,
         model: config.zaiModel,
         useCodingPlan: config.useCodingPlan,
+        language: config.language,
+        enableThinking: config.enableThinking,
     });
     core.info('Cleaning up old review comments...');
     await (0, comments_1.cleanOldComments)(octokit, config.repoOwner, config.repoName, config.pullNumber);

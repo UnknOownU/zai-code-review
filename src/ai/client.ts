@@ -13,6 +13,7 @@ interface ChatCompletionRequest {
   temperature?: number;
   max_tokens?: number;
   response_format?: { type: string };
+  thinking?: { type: string };
 }
 
 interface ChatCompletionResponse {
@@ -39,6 +40,8 @@ interface AIClientConfig {
   maxRetries?: number;
   timeout?: number;
   useCodingPlan?: boolean;
+  language?: string;
+  enableThinking?: boolean;
 }
 
 /**
@@ -51,6 +54,8 @@ export class ZaiClient {
   private maxRetries: number;
   private timeout: number;
   private useCodingPlan: boolean;
+  private language: string;
+  private enableThinking: boolean;
 
   constructor(config: AIClientConfig) {
     this.apiKey = config.apiKey;
@@ -59,6 +64,8 @@ export class ZaiClient {
     this.maxRetries = config.maxRetries ?? 3;
     this.timeout = config.timeout ?? 60000;
     this.useCodingPlan = config.useCodingPlan ?? true;
+    this.language = config.language ?? 'en';
+    this.enableThinking = config.enableThinking ?? false;
   }
 
   async chatCompletion(
@@ -74,6 +81,10 @@ export class ZaiClient {
 
     if (options?.responseFormat === 'json') {
       body.response_format = { type: 'json_object' };
+    }
+
+    if (this.enableThinking) {
+      body.thinking = { type: 'enabled' };
     }
 
     const apiPath = this.useCodingPlan
@@ -137,6 +148,7 @@ export class ZaiClient {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${this.apiKey}`,
+          'Accept-Language': this.language,
           'Content-Length': Buffer.byteLength(body),
           'User-Agent': 'zai-code-review-action/1.0.0',
         },

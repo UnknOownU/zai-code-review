@@ -24,11 +24,12 @@ export interface ActionConfig {
   language: string;
   autoApprove: boolean;
   useCodingPlan: boolean;
+  enableThinking: boolean;
 }
 
 export function parseConfig(): ActionConfig {
   const zaiApiKey = core.getInput('ZAI_API_KEY', { required: true });
-  const zaiModel = core.getInput('ZAI_MODEL') || 'glm-4.7';
+  const zaiModel = core.getInput('ZAI_MODEL') || 'glm-5.1';
   const zaiBaseUrl = core.getInput('ai_base_url') || 'https://api.z.ai';
   const zaiSystemPrompt = core.getInput('ZAI_SYSTEM_PROMPT') || '';
   const reviewerName = core.getInput('ZAI_REVIEWER_NAME') || 'Z.ai Code Review';
@@ -52,6 +53,7 @@ export function parseConfig(): ActionConfig {
   const language = core.getInput('language') || 'en';
   const autoApprove = (core.getInput('auto_approve') || 'false').toLowerCase() === 'true';
   const useCodingPlan = (core.getInput('use_coding_plan') || 'true').toLowerCase() === 'true';
+  const enableThinking = (core.getInput('enable_thinking') || 'false').toLowerCase() === 'true';
 
   if (!zaiApiKey) {
     throw new Error('ZAI_API_KEY is required but not provided.');
@@ -76,6 +78,7 @@ export function parseConfig(): ActionConfig {
   core.info(`  Auto-approve: ${autoApprove}`);
   core.info(`  Exclude patterns: ${excludePatterns.join(', ')}`);
   core.info(`  Use Coding Plan: ${useCodingPlan}`);
+  core.info(`  Enable Thinking: ${enableThinking}`);
 
   return {
     zaiApiKey,
@@ -95,5 +98,6 @@ export function parseConfig(): ActionConfig {
     language,
     autoApprove,
     useCodingPlan,
+    enableThinking,
   };
 }
