@@ -3,15 +3,9 @@
 [![GitHub Actions Status](https://img.shields.io/github/actions/workflow/status/UnknOownU/zai-code-review/review.yml?branch=master)](https://github.com/UnknOownU/zai-code-review/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+> **[Version française](README.fr.md)**
+
 Z.ai Code Review is a GitHub Action that uses the Z.ai API to provide intelligent, automated code reviews. It analyzes pull request diffs to identify bugs, security vulnerabilities, and logic errors, delivering feedback via inline comments and comprehensive PR summaries.
-
-Z.ai Code Review est une GitHub Action qui utilise l'API Z.ai pour fournir des revues de code automatisées et intelligentes. Elle analyse les diffs de pull requests pour identifier les bugs, les failles de sécurité et les erreurs logiques, en fournissant des retours via des commentaires inline et des résumés de PR complets.
-
----
-
-**[English](#feature-highlights)** | **[Français](#fonctionnalités-principales)**
-
----
 
 ## Feature Highlights
 
@@ -132,96 +126,3 @@ The project uses `@vercel/ncc` to bundle the TypeScript source into a single dis
 ## License
 
 This project is licensed under the MIT License.
-
----
-
-# Z.ai Code Review (Français)
-
-## Fonctionnalités principales
-
-- **Commentaires inline automatisés** : Retours précis sur des lignes de code spécifiques avec titres, descriptions et niveaux de sévérité.
-- **Suggestions de code intelligentes** : Améliorations de code applicables en un clic directement dans l'interface GitHub.
-- **Résumés de PR** : Synthèse de toutes les trouvailles par fichier en un aperçu global avec liste des changements fonctionnels et évaluation des risques.
-- **Gestion des gros diffs** : Découpe automatique des diffs volumineux en morceaux gérables par l'IA tout en préservant la précision des numéros de ligne.
-- **Client API fiable** : Logique de retry avec backoff exponentiel et timeouts configurables pour gérer les limites de taux et les erreurs transitoires.
-- **Réduction du bruit** : Nettoyage des anciens commentaires de revue à chaque nouveau push pour garder la conversation de PR propre.
-- **Traitement concurrent** : Revue simultanée de plusieurs fichiers pour un traitement rapide des grosses pull requests.
-- **Logique personnalisable** : Support de prompts système personnalisés pour adapter le comportement du reviewer aux standards de l'équipe.
-
-## Démarrage rapide
-
-Ajouter le fichier workflow suivant dans le dépôt à `.github/workflows/zai-review.yml` :
-
-```yaml
-name: Z.ai Code Review
-
-on:
-  pull_request:
-    types: [opened, synchronize]
-
-permissions:
-  contents: read
-  pull-requests: write
-
-jobs:
-  review:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Z.ai Code Review
-        uses: UnknOownU/zai-code-review@master
-        with:
-          ZAI_API_KEY: ${{ secrets.ZAI_API_KEY }}
-```
-
-## Configuration
-
-| Paramètre | Type | Défaut | Description |
-|---|---|---|---|
-| `ZAI_API_KEY` | string | **Requis** | Clé API Z.ai pour l'authentification. |
-| `ZAI_MODEL` | string | `glm-4.7` | Modèle Z.ai à utiliser pour l'analyse. |
-| `ZAI_SYSTEM_PROMPT` | string | `""` | Remplacement optionnel des instructions système de l'IA. |
-| `ZAI_REVIEWER_NAME` | string | `Z.ai Code Review` | Nom affiché dans les commentaires de revue. |
-| `GITHUB_TOKEN` | string | `${{ github.token }}` | Token GitHub pour l'accès API. Nécessite `pull-requests: write`. |
-| `max_files` | number | `20` | Nombre maximum de fichiers à analyser par PR. |
-| `exclude_patterns` | string | (voir ci-dessous) | Patterns glob séparés par des virgules à exclure. |
-| `language` | string | `en` | Langue des commentaires (`en` ou `fr`). |
-| `auto_approve` | boolean | `false` | Approuver automatiquement la PR si aucun problème n'est trouvé. |
-| `max_comments` | number | `50` | Nombre maximum de commentaires inline par revue. |
-| `ai_base_url` | string | `https://api.z.ai` | URL de base de l'API Z.ai. |
-
-## Fonctionnement
-
-1. **Déclenchement** : L'action s'active quand une pull request est ouverte ou mise à jour.
-2. **Collecte du contexte** : Récupération du diff de la PR et identification des fichiers modifiés, en filtrant les binaires et les chemins exclus.
-3. **Analyse IA** : Les fichiers sont traités en parallèle. Les gros fichiers sont découpés en morceaux. L'IA analyse le code avec une approche "Bug-First", en se concentrant sur la logique, la sécurité et la performance.
-4. **Validation** : Les trouvailles sont mappées des positions relatives au diff vers les numéros de ligne absolus du fichier.
-5. **Rapport** :
-   - Suppression des commentaires obsolètes des exécutions précédentes.
-   - Publication de nouveaux commentaires inline avec marqueurs de sévérité.
-   - Génération d'un commentaire résumé contenant le verdict de la revue et les trouvailles clés.
-
-## Exclusion de fichiers
-
-Exclure des fichiers ou répertoires spécifiques avec le paramètre `exclude_patterns`. Supporte les valeurs séparées par des virgules et les patterns de type glob :
-
-- `*.min.js` (par extension)
-- `tests/*` (par répertoire)
-- `generated.ts` (correspondance exacte)
-
-**Exclusions par défaut** : `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`, `*.min.js`, `*.min.css`, `*.bundle.js`, `*.map`.
-
-## Développement
-
-Prérequis : Node.js 20+ et pnpm.
-
-```bash
-pnpm install       # Installer les dépendances
-pnpm run check     # Vérification de types + build
-pnpm run build     # Build uniquement
-```
-
-Le projet utilise `@vercel/ncc` pour bundler le code source TypeScript en un seul fichier de distribution requis par GitHub Actions.
-
-## Licence
-
-Ce projet est sous licence MIT.
