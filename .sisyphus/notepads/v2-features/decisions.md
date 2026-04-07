@@ -1,0 +1,2 @@
+- Task 1: Enforced config size limits after base64 decoding using UTF-8 byte length checks (10KB for YAML config, 20KB for markdown instructions).
+- Task 1: Centralized file fetching in `readRepoFile()` so config and instructions share identical 404/error handling while keeping schema validation isolated in `validateConfig()`.

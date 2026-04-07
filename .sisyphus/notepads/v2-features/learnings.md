@@ -1,0 +1,3 @@
+- Task 1: Repo config reads `.github/zai-review.yaml` and `.github/zai-review-instructions.md` strictly from the PR base branch via `octokit.repos.getContent({ ref })`.
+- Validation strips forbidden credential-style keys (`api_key`, `github_token`, `base_url` variants), warns on unknown keys, and keeps only correctly typed allowed values.
+- Safe fallback behavior is consistent: 404 returns empty config/instructions, oversize files are skipped, and parse/runtime read failures degrade to warnings plus empty results.
