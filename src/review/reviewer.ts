@@ -20,7 +20,8 @@ export async function reviewFile(
   aiClient: ZaiClient,
   file: FileDiff,
   customSystemPrompt: string,
-  language: string
+  language: string,
+  customInstructions?: string,
 ): Promise<FileReview> {
   core.info(`Reviewing file: ${file.path} (+${file.additions}/-${file.deletions})`);
 
@@ -37,7 +38,8 @@ export async function reviewFile(
         file.path,
         chunks[i],
         customSystemPrompt,
-        language
+        language,
+        customInstructions,
       );
 
       const response = await aiClient.chatCompletion(
@@ -82,7 +84,8 @@ export async function reviewFiles(
   files: FileDiff[],
   customSystemPrompt: string,
   language: string,
-  concurrency: number = 3
+  concurrency: number = 3,
+  customInstructions?: string,
 ): Promise<FileReview[]> {
   core.info(`Starting review of ${files.length} files with concurrency ${concurrency}...`);
 
@@ -94,7 +97,7 @@ export async function reviewFiles(
       const file = queue.shift();
       if (!file) break;
 
-      const result = await reviewFile(aiClient, file, customSystemPrompt, language);
+      const result = await reviewFile(aiClient, file, customSystemPrompt, language, customInstructions);
       results.push(result);
     }
   }

@@ -1,5 +1,7 @@
 import * as core from '@actions/core';
 import * as github from '@actions/github';
+import { getOctokit } from './github/client';
+import { readRepoConfig, readRepoInstructions } from './config/reader';
 
 export interface ActionConfig {
   // Z.ai API configuration
@@ -25,13 +27,14 @@ export interface ActionConfig {
   autoApprove: boolean;
   useCodingPlan: boolean;
   enableThinking: boolean;
+  customInstructions: string;
 }
 
-export function parseConfig(): ActionConfig {
+export async function parseConfig(): Promise<ActionConfig> {
   const zaiApiKey = core.getInput('ZAI_API_KEY', { required: true });
-  const zaiModel = core.getInput('ZAI_MODEL') || 'glm-5.1';
+  const zaiModelInput = core.getInput('ZAI_MODEL');
   const zaiBaseUrl = core.getInput('ai_base_url') || 'https://api.z.ai';
-  const zaiSystemPrompt = core.getInput('ZAI_SYSTEM_PROMPT') || '';
+  const zaiSystemPromptInput = core.getInput('ZAI_SYSTEM_PROMPT');
   const reviewerName = core.getInput('ZAI_REVIEWER_NAME') || 'Z.ai Code Review';
   const githubToken = core.getInput('GITHUB_TOKEN') || process.env.GITHUB_TOKEN || '';
 
@@ -42,19 +45,43 @@ export function parseConfig(): ActionConfig {
   const commitId = context.payload.pull_request?.head?.sha ?? '';
   const prTitle = (context.payload.pull_request?.title as string) ?? 'Pull Request';
 
-  let maxFiles = parseInt(core.getInput('max_files') || '20', 10);
-  let maxComments = parseInt(core.getInput('max_comments') || '50', 10);
-  const excludePatternsRaw = core.getInput('exclude_patterns') ||
+  // Read repo config file from base branch
+  let repoConfig: Awaited<ReturnType<typeof readRepoConfig>> = {};
+  let customInstructions = '';
+  try {
+    const octokit = getOctokit(githubToken);
+    const baseBranch = context.payload.pull_request?.base?.ref ?? 'main';
+    repoConfig = await readRepoConfig(octokit, repoOwner, repoName, baseBranch);
+    customInstructions = await readRepoInstructions(octokit, repoOwner, repoName, baseBranch);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    core.warning(`Failed to read repo config: ${message}`);
+  }
+
+  // Merge logic: explicit action inputs override config file; config file overrides defaults
+  const zaiModel = zaiModelInput || repoConfig.model || 'glm-5.1';
+  const zaiSystemPrompt = zaiSystemPromptInput || repoConfig.system_prompt || '';
+
+  const maxFilesInput = core.getInput('max_files');
+  const maxCommentsInput = core.getInput('max_comments');
+  const excludePatternsInput = core.getInput('exclude_patterns');
+  const languageInput = core.getInput('language');
+  const autoApproveInput = core.getInput('auto_approve');
+  const enableThinkingInput = core.getInput('enable_thinking');
+
+  let maxFiles = parseInt(maxFilesInput || String(repoConfig.max_files ?? '20'), 10);
+  let maxComments = parseInt(maxCommentsInput || String(repoConfig.max_comments ?? '50'), 10);
+  const excludePatternsRaw = excludePatternsInput ||
+    (repoConfig.exclude_patterns?.length ? repoConfig.exclude_patterns.join(',') : null) ||
     'package-lock.json,yarn.lock,pnpm-lock.yaml,*.min.js,*.min.css,*.bundle.js,*.map';
   const excludePatterns = excludePatternsRaw
     .split(',')
     .map(p => p.trim())
     .filter(p => p.length > 0);
-  const language = core.getInput('language') || 'en';
-  const autoApprove = (core.getInput('auto_approve') || 'false').toLowerCase() === 'true';
+  const language = languageInput || repoConfig.language || 'en';
+  const autoApprove = (autoApproveInput || String(repoConfig.auto_approve ?? 'false')).toLowerCase() === 'true';
   const useCodingPlan = (core.getInput('use_coding_plan') || 'true').toLowerCase() === 'true';
-  const enableThinking = (core.getInput('enable_thinking') || 'false').toLowerCase() === 'true';
-
+  const enableThinking = (enableThinkingInput || String(repoConfig.enable_thinking ?? 'false')).toLowerCase() === 'true';
   if (!zaiApiKey) {
     throw new Error('ZAI_API_KEY is required but not provided.');
   }
@@ -121,5 +148,6 @@ export function parseConfig(): ActionConfig {
     autoApprove,
     useCodingPlan,
     enableThinking,
+    customInstructions,
   };
 }

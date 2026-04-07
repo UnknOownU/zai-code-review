@@ -1,8 +1,12 @@
 import { REVIEW_MARKER } from '../review/types';
 
-export function getDefaultSystemPrompt(language: string): string {
+export function getDefaultSystemPrompt(language: string, customInstructions?: string): string {
   const langInstruction = language && language !== 'en'
     ? `You MUST write all your review comments, titles, descriptions, and suggestions in ${language}. Code in suggestion blocks must remain in the original programming language.`
+    : '';
+
+  const instructionsBlock = customInstructions
+    ? `\n\n<repo_instructions>\n${customInstructions}\n</repo_instructions>`
     : '';
 
   return `You are Reviewer, an expert senior code reviewer specializing in identifying bugs, security vulnerabilities, and correctness issues in code diffs. Your primary function is to analyze changes and provide precise, actionable feedback that prevents defects from reaching production.
@@ -153,16 +157,17 @@ Bad output (DO NOT do this):
   ]
 }
 Why this is bad: This is a style preference, not a real issue. The code is correct and readable. Return {"findings": []} instead.
-</example>`;
+</example>${instructionsBlock}`;
 }
 
 export function buildFileReviewPrompt(
   filePath: string,
   diffContent: string,
   customSystemPrompt: string,
-  language: string
+  language: string,
+  customInstructions?: string,
 ): { system: string; user: string } {
-  const system = customSystemPrompt || getDefaultSystemPrompt(language);
+  const system = customSystemPrompt || getDefaultSystemPrompt(language, customInstructions);
 
   const user = `<review_request>
 <file_path>${filePath}</file_path>
@@ -181,7 +186,8 @@ export function buildSummaryPrompt(
   prTitle: string,
   filesSummary: { path: string; additions: number; deletions: number; findingsCount: number }[],
   allFindingsSummary: string,
-  language: string
+  language: string,
+  customInstructions?: string,
 ): { system: string; user: string } {
   const langInstruction = language && language !== 'en'
     ? `You MUST write all your review comments, titles, descriptions, and suggestions in ${language}. Code in suggestion blocks must remain in the original programming language.`
@@ -221,8 +227,7 @@ Field rules:
 - NEVER inflate severity. If there are only minor suggestions, the verdict is \`approve\`, not \`comment\`.
 - NEVER fabricate findings that were not reported in the file reviews.
 
-</non_negotiable_rules>`;
-
+</non_negotiable_rules>${customInstructions ? `\n\n<repo_instructions>\n${customInstructions}\n</repo_instructions>` : ''}`;
   const fileList = filesSummary
     .map(f => `  - ${f.path} (+${f.additions}/-${f.deletions}, ${f.findingsCount} findings)`)
     .join('\n');

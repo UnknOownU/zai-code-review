@@ -16,7 +16,8 @@ export async function generateSummary(
   prTitle: string,
   fileReviews: FileReview[],
   reviewerName: string,
-  language: string
+  language: string,
+  customInstructions?: string,
 ): Promise<ReviewSummary> {
   core.info('Generating PR summary...');
 
@@ -71,7 +72,8 @@ export async function generateSummary(
     prTitle,
     filesSummary,
     findingsText,
-    language
+    language,
+    customInstructions,
   );
 
   let summaryText = '';

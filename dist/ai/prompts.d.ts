@@ -1,5 +1,5 @@
-export declare function getDefaultSystemPrompt(language: string): string;
-export declare function buildFileReviewPrompt(filePath: string, diffContent: string, customSystemPrompt: string, language: string): {
+export declare function getDefaultSystemPrompt(language: string, customInstructions?: string): string;
+export declare function buildFileReviewPrompt(filePath: string, diffContent: string, customSystemPrompt: string, language: string, customInstructions?: string): {
     system: string;
     user: string;
 };
@@ -8,7 +8,7 @@ export declare function buildSummaryPrompt(prTitle: string, filesSummary: {
     additions: number;
     deletions: number;
     findingsCount: number;
-}[], allFindingsSummary: string, language: string): {
+}[], allFindingsSummary: string, language: string, customInstructions?: string): {
     system: string;
     user: string;
 };

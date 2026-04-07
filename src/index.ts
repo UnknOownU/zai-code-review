@@ -11,7 +11,7 @@ import { ReviewVerdict, Severity } from './review/types';
 async function run(): Promise<void> {
   core.info('=== Z.ai Code Review Action Starting ===');
 
-  const config = parseConfig();
+  const config = await parseConfig();
   core.info('Configuration parsed successfully.');
 
   const octokit = getOctokit(config.githubToken);
@@ -69,7 +69,8 @@ async function run(): Promise<void> {
     filesToReview,
     config.zaiSystemPrompt,
     config.language,
-    3 // concurrency
+    3, // concurrency
+    config.customInstructions,
   );
 
   const allComments = fileReviews
@@ -91,7 +92,8 @@ async function run(): Promise<void> {
     prTitle,
     fileReviews,
     config.reviewerName,
-    config.language
+    config.language,
+    config.customInstructions,
   );
 
   if (limitedComments.length > 0) {

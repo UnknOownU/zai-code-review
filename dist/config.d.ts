@@ -17,5 +17,6 @@ export interface ActionConfig {
     autoApprove: boolean;
     useCodingPlan: boolean;
     enableThinking: boolean;
+    customInstructions: string;
 }
-export declare function parseConfig(): ActionConfig;
+export declare function parseConfig(): Promise<ActionConfig>;
