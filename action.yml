@@ -53,6 +53,18 @@ inputs:
     description: 'Enable chain-of-thought reasoning for deeper analysis (increases token usage)'
     required: false
     default: 'false'
+outputs:
+  review_status:
+    description: 'The review verdict: approve, request_changes, or comment'
+  comments_count:
+    description: 'Total number of inline comments posted'
+  critical_count:
+    description: 'Number of critical severity findings'
+  security_count:
+    description: 'Number of security category findings'
+  warning_count:
+    description: 'Number of warning severity findings'
+
 runs:
   using: 'node20'
   main: 'dist/index.js'

@@ -30790,8 +30790,8 @@ function parseConfig() {
     const pullNumber = context.payload.pull_request?.number ?? 0;
     const commitId = context.payload.pull_request?.head?.sha ?? '';
     const prTitle = context.payload.pull_request?.title ?? 'Pull Request';
-    const maxFiles = parseInt(core.getInput('max_files') || '20', 10);
-    const maxComments = parseInt(core.getInput('max_comments') || '50', 10);
+    let maxFiles = parseInt(core.getInput('max_files') || '20', 10);
+    let maxComments = parseInt(core.getInput('max_comments') || '50', 10);
     const excludePatternsRaw = core.getInput('exclude_patterns') ||
         'package-lock.json,yarn.lock,pnpm-lock.yaml,*.min.js,*.min.css,*.bundle.js,*.map';
     const excludePatterns = excludePatternsRaw
@@ -30824,10 +30824,12 @@ function parseConfig() {
             'Proceeding anyway — the API will reject it if invalid.');
     }
     if (maxFiles < 1 || maxFiles > 100) {
-        core.warning(`max_files=${maxFiles} is outside the recommended range (1-100). Using ${Math.min(Math.max(maxFiles, 1), 100)}.`);
+        core.warning(`max_files=${maxFiles} is outside the recommended range (1-100). Clamping.`);
+        maxFiles = Math.min(Math.max(maxFiles, 1), 100);
     }
     if (maxComments < 1 || maxComments > 200) {
-        core.warning(`max_comments=${maxComments} is outside the recommended range (1-200). Using ${Math.min(Math.max(maxComments, 1), 200)}.`);
+        core.warning(`max_comments=${maxComments} is outside the recommended range (1-200). Clamping.`);
+        maxComments = Math.min(Math.max(maxComments, 1), 200);
     }
     core.info(`Configuration loaded:`);
     core.info(`  Repository: ${repoOwner}/${repoName}`);
