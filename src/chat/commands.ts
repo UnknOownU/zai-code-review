@@ -51,19 +51,32 @@ async function postReply(
 
 export async function handleExplain(ctx: ChatContext, args: string): Promise<void> {
   const { owner, repo } = github.context.repo;
-  const codeContext = ctx.diffHunk || ctx.commentBody;
-  const prompt = `Given this code context:\n${codeContext}\n\nQuestion: ${args}`;
+
+  // Guard: require a question
+  if (!args.trim()) {
+    await postReply(
+      ctx.octokit, owner, repo, ctx.pullNumber,
+      'Please provide a question after the command.\nExample: `/zai-review explain why is eval dangerous`',
+      ctx.commentId
+    );
+    return;
+  }
 
   core.info(`Processing explain command for PR #${ctx.pullNumber}`);
+
+  // Build prompt: use diff hunk (inline comment) or ask the question directly (general comment)
+  const userContent = ctx.diffHunk
+    ? `Given this code:\n\`\`\`\n${ctx.diffHunk}\n\`\`\`\n\nQuestion: ${args}`
+    : args;
 
   const response = await ctx.aiClient.chatCompletion([
     {
       role: 'system',
-      content: "You are a code reviewer. Answer the developer's question clearly and concisely.",
+      content: 'You are a code reviewer. Answer the developer\'s question clearly and concisely. Focus on the specific question asked.',
     },
     {
       role: 'user',
-      content: prompt,
+      content: userContent,
     },
   ]);
 

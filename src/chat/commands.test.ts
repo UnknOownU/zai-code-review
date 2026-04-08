@@ -103,11 +103,11 @@ describe('chat commands', () => {
     expect(aiClient.chatCompletion).toHaveBeenCalledWith([
       {
         role: 'system',
-        content: "You are a code reviewer. Answer the developer's question clearly and concisely.",
+        content: "You are a code reviewer. Answer the developer's question clearly and concisely. Focus on the specific question asked.",
       },
       {
         role: 'user',
-        content: 'Given this code context:\n@@ -1,2 +1,2 @@\n-foo\n+bar\n\nQuestion: why is this slow?',
+        content: 'Given this code:\n```\n@@ -1,2 +1,2 @@\n-foo\n+bar\n```\n\nQuestion: why is this slow?',
       },
     ]);
     expect(ctx.octokit.issues.createComment).toHaveBeenCalledWith({
