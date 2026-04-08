@@ -31031,24 +31031,41 @@ const HELP_MESSAGE = `## Z.ai Code Review — Commands
 
 **Configuration**: Add \`.github/zai-review.yaml\` for repo-level settings.
 **Custom instructions**: Add \`.github/zai-review-instructions.md\` to customize review behavior.`;
-async function postReply(octokit, owner, repo, pullNumber, body, commentId) {
-    // For pull_request_review_comment events, reply in the thread using the dedicated reply endpoint
+function formatReplyBody(body, ctx, isIssueComment) {
+    if (!isIssueComment)
+        return body;
+    const question = ctx.commentBody.replace(/\/zai-review\s+\w+\s*/i, '').trim();
+    const quoted = question
+        ? question.split('\n').map(l => `> ${l}`).join('\n')
+        : `> ${ctx.commentBody}`;
+    return [
+        `@${ctx.userLogin} — replying to your [comment](${ctx.commentUrl}):`,
+        '',
+        quoted,
+        '',
+        '---',
+        '',
+        body,
+    ].join('\n');
+}
+async function postReply(octokit, owner, repo, pullNumber, body, ctx) {
     const eventName = github.context.eventName;
-    if (eventName === 'pull_request_review_comment' && commentId) {
+    if (eventName === 'pull_request_review_comment' && ctx.commentId) {
         await octokit.pulls.createReplyForReviewComment({
             owner,
             repo,
             pull_number: pullNumber,
-            comment_id: commentId,
+            comment_id: ctx.commentId,
             body,
         });
     }
     else {
+        const replyBody = formatReplyBody(body, ctx, true);
         await octokit.issues.createComment({
             owner,
             repo,
             issue_number: pullNumber,
-            body,
+            body: replyBody,
         });
     }
 }
@@ -31056,7 +31073,7 @@ async function handleExplain(ctx, args) {
     const { owner, repo } = github.context.repo;
     // Guard: require a question
     if (!args.trim()) {
-        await postReply(ctx.octokit, owner, repo, ctx.pullNumber, 'Please provide a question after the command.\nExample: `/zai-review explain why is eval dangerous`', ctx.commentId);
+        await postReply(ctx.octokit, owner, repo, ctx.pullNumber, 'Please provide a question after the command.\nExample: `/zai-review explain why is eval dangerous`', ctx);
         return;
     }
     core.info(`Processing explain command for PR #${ctx.pullNumber}`);
@@ -31093,15 +31110,15 @@ async function handleExplain(ctx, args) {
             content: userContent,
         },
     ]);
-    await postReply(ctx.octokit, owner, repo, ctx.pullNumber, response, ctx.commentId);
+    await postReply(ctx.octokit, owner, repo, ctx.pullNumber, response, ctx);
 }
 async function handleHelp(ctx) {
     const { owner, repo } = github.context.repo;
-    await postReply(ctx.octokit, owner, repo, ctx.pullNumber, HELP_MESSAGE, ctx.commentId);
+    await postReply(ctx.octokit, owner, repo, ctx.pullNumber, HELP_MESSAGE, ctx);
 }
 async function handleReview(ctx) {
     const { owner, repo } = github.context.repo;
-    await postReply(ctx.octokit, owner, repo, ctx.pullNumber, '**Review requested** — A full re-review will be triggered on the next push to this PR. If you want an immediate review, push an empty commit: `git commit --allow-empty -m "trigger review" && git push`.', ctx.commentId);
+    await postReply(ctx.octokit, owner, repo, ctx.pullNumber, '**Review requested** \u2014 A full re-review will be triggered on the next push to this PR. If you want an immediate review, push an empty commit: `git commit --allow-empty -m "trigger review" && git push`.', ctx);
 }
 async function handleFix(ctx) {
     const { owner, repo } = github.context.repo;
@@ -31115,7 +31132,7 @@ async function handleFix(ctx) {
                 return '**Autofix is disabled.** To enable it, add `autofix_mode: suggest` or `autofix_mode: commit` to your workflow or `.github/zai-review.yaml` config file.';
         }
     })();
-    await postReply(ctx.octokit, owner, repo, ctx.pullNumber, body, ctx.commentId);
+    await postReply(ctx.octokit, owner, repo, ctx.pullNumber, body, ctx);
 }
 
 
@@ -31233,6 +31250,8 @@ async function handleChatEvent(octokit, aiClient, config) {
             pullNumber,
             commentBody: comment.body,
             diffHunk: 'diff_hunk' in comment && typeof comment.diff_hunk === 'string' ? comment.diff_hunk : undefined,
+            userLogin: comment.user?.login ?? 'unknown',
+            commentUrl: comment.html_url ?? '',
         };
         switch (parsed.command) {
             case 'explain':

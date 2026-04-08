@@ -85,6 +85,8 @@ export async function handleChatEvent(
       pullNumber,
       commentBody: comment.body,
       diffHunk: 'diff_hunk' in comment && typeof comment.diff_hunk === 'string' ? comment.diff_hunk : undefined,
+      userLogin: comment.user?.login ?? 'unknown',
+      commentUrl: comment.html_url ?? '',
     };
 
     switch (parsed.command) {

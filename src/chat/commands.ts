@@ -12,6 +12,8 @@ export interface ChatContext {
   pullNumber: number;
   commentBody: string;
   diffHunk?: string;
+  userLogin: string;
+  commentUrl: string;
 }
 
 function buildChatSystemPrompt(basePrompt: string, config: ActionConfig): string {
@@ -37,30 +39,49 @@ const HELP_MESSAGE = `## Z.ai Code Review — Commands
 **Configuration**: Add \`.github/zai-review.yaml\` for repo-level settings.
 **Custom instructions**: Add \`.github/zai-review-instructions.md\` to customize review behavior.`;
 
+function formatReplyBody(body: string, ctx: { userLogin: string; commentBody: string; commentUrl: string }, isIssueComment: boolean): string {
+  if (!isIssueComment) return body;
+
+  const question = ctx.commentBody.replace(/\/zai-review\s+\w+\s*/i, '').trim();
+  const quoted = question
+    ? question.split('\n').map(l => `> ${l}`).join('\n')
+    : `> ${ctx.commentBody}`;
+
+  return [
+    `@${ctx.userLogin} — replying to your [comment](${ctx.commentUrl}):`,
+    '',
+    quoted,
+    '',
+    '---',
+    '',
+    body,
+  ].join('\n');
+}
+
 async function postReply(
   octokit: Octokit,
   owner: string,
   repo: string,
   pullNumber: number,
   body: string,
-  commentId?: number
+  ctx: ChatContext
 ): Promise<void> {
-  // For pull_request_review_comment events, reply in the thread using the dedicated reply endpoint
   const eventName = github.context.eventName;
-  if (eventName === 'pull_request_review_comment' && commentId) {
+  if (eventName === 'pull_request_review_comment' && ctx.commentId) {
     await octokit.pulls.createReplyForReviewComment({
       owner,
       repo,
       pull_number: pullNumber,
-      comment_id: commentId,
+      comment_id: ctx.commentId,
       body,
     });
   } else {
+    const replyBody = formatReplyBody(body, ctx, true);
     await octokit.issues.createComment({
       owner,
       repo,
       issue_number: pullNumber,
-      body,
+      body: replyBody,
     });
   }
 }
@@ -73,7 +94,7 @@ export async function handleExplain(ctx: ChatContext, args: string): Promise<voi
     await postReply(
       ctx.octokit, owner, repo, ctx.pullNumber,
       'Please provide a question after the command.\nExample: `/zai-review explain why is eval dangerous`',
-      ctx.commentId
+      ctx
     );
     return;
   }
@@ -116,12 +137,12 @@ export async function handleExplain(ctx: ChatContext, args: string): Promise<voi
     },
   ]);
 
-  await postReply(ctx.octokit, owner, repo, ctx.pullNumber, response, ctx.commentId);
+  await postReply(ctx.octokit, owner, repo, ctx.pullNumber, response, ctx);
 }
 
 export async function handleHelp(ctx: ChatContext): Promise<void> {
   const { owner, repo } = github.context.repo;
-  await postReply(ctx.octokit, owner, repo, ctx.pullNumber, HELP_MESSAGE, ctx.commentId);
+  await postReply(ctx.octokit, owner, repo, ctx.pullNumber, HELP_MESSAGE, ctx);
 }
 
 export async function handleReview(ctx: ChatContext): Promise<void> {
@@ -131,8 +152,8 @@ export async function handleReview(ctx: ChatContext): Promise<void> {
     owner,
     repo,
     ctx.pullNumber,
-    '**Review requested** — A full re-review will be triggered on the next push to this PR. If you want an immediate review, push an empty commit: `git commit --allow-empty -m "trigger review" && git push`.',
-    ctx.commentId
+    '**Review requested** \u2014 A full re-review will be triggered on the next push to this PR. If you want an immediate review, push an empty commit: `git commit --allow-empty -m "trigger review" && git push`.',
+    ctx
   );
 }
 
@@ -150,5 +171,5 @@ export async function handleFix(ctx: ChatContext): Promise<void> {
     }
   })();
 
-  await postReply(ctx.octokit, owner, repo, ctx.pullNumber, body, ctx.commentId);
+  await postReply(ctx.octokit, owner, repo, ctx.pullNumber, body, ctx);
 }
