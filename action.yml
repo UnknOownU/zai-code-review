@@ -30,7 +30,7 @@ inputs:
     required: false
     default: 'package-lock.json,yarn.lock,pnpm-lock.yaml,*.min.js,*.min.css,*.bundle.js,*.map'
   language:
-    description: 'Language for review comments and Accept-Language header (e.g. en, fr, de, ja, zh)'
+    description: 'Language for AI review comments (e.g. en, fr, de, ja, zh, es, ar)'
     required: false
     default: 'en'
   auto_approve:
@@ -53,6 +53,23 @@ inputs:
     description: 'Enable chain-of-thought reasoning for deeper analysis (increases token usage)'
     required: false
     default: 'false'
+  autofix_mode:
+    description: 'Autofix mode: disabled (default), suggest (render suggestions), or commit (apply fixes directly to branch)'
+    required: false
+    default: 'disabled'
+  incremental:
+    description: 'Only review files changed since the last review (true/false)'
+    required: false
+    default: 'true'
+  chat_enabled:
+    description: 'Enable /zai-review chat commands in PR comments (true/false)'
+    required: false
+    default: 'true'
+  chat_allowed_roles:
+    description: 'Comma-separated GitHub roles allowed to use chat commands (OWNER, MEMBER, COLLABORATOR, etc.)'
+    required: false
+    default: 'OWNER,MEMBER,COLLABORATOR'
+
 outputs:
   review_status:
     description: 'The review verdict: approve, request_changes, or comment'
