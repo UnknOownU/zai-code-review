@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Z.ai Code Review
-        uses: UnknOownU/zai-code-review@v1
+        uses: UnknOownU/zai-code-review@v2
         with:
           ZAI_API_KEY: ${{ secrets.ZAI_API_KEY }}
           language: fr
