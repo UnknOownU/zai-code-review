@@ -30168,8 +30168,9 @@ class ZaiClient {
                 const statusMatch = error.message?.match(/status\s+(\d{3})/);
                 const statusCode = statusMatch ? parseInt(statusMatch[1], 10) : 0;
                 if (statusCode === 429 && attempt < this.maxRetries) {
-                    const delay = Math.pow(2, attempt - 1) * 2000; // 2s, 4s, 8s for rate limits
-                    core.info(`Rate limited (429). Retrying in ${delay}ms... (attempt ${attempt}/${this.maxRetries})`);
+                    const delays = [15000, 30000]; // 15s, then 30s
+                    const delay = delays[attempt - 1] ?? 30000;
+                    core.info(`Rate limited (429). Retrying in ${delay / 1000}s... (attempt ${attempt}/${this.maxRetries})`);
                     await sleep(delay);
                     continue;
                 }
