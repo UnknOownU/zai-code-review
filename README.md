@@ -60,6 +60,92 @@ jobs:
 | `ai_base_url` | string | `https://api.z.ai` | Base URL for the Z.ai API. |
 | `use_coding_plan` | boolean | `true` | Use the GLM Coding Plan endpoint (`/api/coding/paas/v4`) instead of the standard API. |
 | `enable_thinking` | boolean | `false` | Enable chain-of-thought reasoning for deeper analysis (increases token usage). |
+| `autofix_mode` | string | `disabled` | Autofix mode: `disabled`, `suggest`, or `commit`. |
+| `incremental` | boolean | `true` | Only review files changed since last review. |
+| `chat_enabled` | boolean | `true` | Enable `/zai-review` chat commands. |
+| `chat_allowed_roles` | string | `OWNER,MEMBER,COLLABORATOR` | Roles allowed to use chat commands. |
+
+
+
+## Chat Commands
+
+Post `/zai-review <command>` in any PR comment to interact with the reviewer:
+
+| Command | Description |
+|---|---|
+| `/zai-review explain <question>` | Ask a question about the code in context |
+| `/zai-review review` | Request a fresh review on the next push |
+| `/zai-review fix` | Apply suggestion fixes (requires autofix_mode) |
+| `/zai-review help` | List all available commands |
+
+Only users with the roles defined in `chat_allowed_roles` can trigger commands (default: OWNER, MEMBER, COLLABORATOR). Bot accounts are always rejected.
+
+Requires adding `issue_comment` and `pull_request_review_comment` triggers to your workflow:
+
+```yaml
+on:
+  pull_request:
+    types: [opened, synchronize]
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+```
+
+## Autofix
+
+Set `autofix_mode` to enable suggestion rendering or direct commits:
+
+| Mode | Behavior |
+|---|---|
+| `disabled` (default) | No autofix |
+| `suggest` | Review comments include GitHub click-to-apply suggestion blocks |
+| `commit` | Fixes are committed directly to the PR branch (not available for fork PRs) |
+
+## Incremental Review
+
+By default (`incremental: true`), the action only reviews files changed since the last review run. On the first run or after a force push, a full review is performed.
+
+The last reviewed commit SHA is stored in the summary comment and used to compute the incremental diff on subsequent pushes.
+
+Set `incremental: false` to always perform a full review.
+
+## Repo Configuration
+
+Create `.github/zai-review.yaml` in your repository to configure the action per-repo without modifying your workflow:
+
+```yaml
+# .github/zai-review.yaml
+language: fr
+max_files: 30
+exclude_patterns:
+  - "generated/**"
+  - "*.pb.go"
+autofix_mode: suggest
+incremental: true
+```
+
+Action workflow inputs override config file values when explicitly set.
+
+## Custom AI Instructions
+
+Create `.github/zai-review-instructions.md` to give the AI reviewer project-specific instructions (similar to GitHub Copilot's `copilot-instructions.md`):
+
+```markdown
+# Review Instructions
+
+- This project is a financial API. Security is the top priority.
+- All database access MUST use parameterized queries.
+- Ignore style issues. Focus only on bugs and security vulnerabilities.
+- Every API endpoint must have an authentication middleware.
+```
+
+The instructions are injected into the AI system prompt on every review.
 
 ## How It Works
 

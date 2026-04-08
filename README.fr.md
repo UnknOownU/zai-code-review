@@ -60,6 +60,92 @@ jobs:
 | `ai_base_url` | string | `https://api.z.ai` | URL de base de l'API Z.ai. |
 | `use_coding_plan` | boolean | `true` | Utiliser l'endpoint GLM Coding Plan (`/api/coding/paas/v4`) au lieu de l'API standard. |
 | `enable_thinking` | boolean | `false` | Activer le raisonnement en chaine de pensee pour une analyse plus approfondie (augmente la consommation de tokens). |
+| `autofix_mode` | string | `disabled` | Mode Autofix : `disabled`, `suggest`, ou `commit`. |
+| `incremental` | boolean | `true` | Ne revoir que les fichiers modifies depuis la derniere revue. |
+| `chat_enabled` | boolean | `true` | Activer les commandes de chat `/zai-review`. |
+| `chat_allowed_roles` | string | `OWNER,MEMBER,COLLABORATOR` | Roles autorises a utiliser les commandes de chat. |
+
+
+
+## Commandes Chat
+
+Postez `/zai-review <command>` dans n'importe quel commentaire de PR pour interagir avec le reviewer :
+
+| Commande | Description |
+|---|---|
+| `/zai-review explain <question>` | Poser une question sur le code en contexte |
+| `/zai-review review` | Demander une nouvelle revue au prochain push |
+| `/zai-review fix` | Appliquer les corrections suggerees (necessite `autofix_mode`) |
+| `/zai-review help` | Lister toutes les commandes disponibles |
+
+Seuls les utilisateurs ayant les roles definis dans `chat_allowed_roles` peuvent declencher des commandes (par defaut : OWNER, MEMBER, COLLABORATOR). Les comptes de bots sont toujours rejetes.
+
+Necessite l'ajout des declencheurs `issue_comment` et `pull_request_review_comment` a votre workflow :
+
+```yaml
+on:
+  pull_request:
+    types: [opened, synchronize]
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+```
+
+## Autofix
+
+Reglez `autofix_mode` pour activer le rendu des suggestions ou les commits directs :
+
+| Mode | Comportement |
+|---|---|
+| `disabled` (par defaut) | Pas d'autofix |
+| `suggest` | Les commentaires de revue incluent des blocs de suggestion GitHub applicables en un clic |
+| `commit` | Les corrections sont commitees directement sur la branche de la PR (non disponible pour les PR issues de forks) |
+
+## Revue Incrémentale
+
+Par defaut (`incremental: true`), l'action ne revoit que les fichiers modifies depuis la derniere execution de la revue. Lors de la premiere execution ou apres un force push, une revue complete est effectuee.
+
+Le SHA du dernier commit revu est stocke dans le commentaire de resume et utilise pour calculer le diff incremental lors des pushes suivants.
+
+Reglez `incremental: false` pour toujours effectuer une revue complete.
+
+## Configuration du Repo
+
+Creez `.github/zai-review.yaml` dans votre depot pour configurer l'action par depot sans modifier votre workflow :
+
+```yaml
+# .github/zai-review.yaml
+language: fr
+max_files: 30
+exclude_patterns:
+  - "generated/**"
+  - "*.pb.go"
+autofix_mode: suggest
+incremental: true
+```
+
+Les entrees du workflow de l'action remplacent les valeurs du fichier de configuration lorsqu'elles sont explicitement definies.
+
+## Instructions IA Personnalisées
+
+Creez `.github/zai-review-instructions.md` pour donner au reviewer IA des instructions specifiques au projet (similaire au fichier `copilot-instructions.md` de GitHub Copilot) :
+
+```markdown
+# Instructions de revue
+
+- Ce projet est une API financiere. La securite est la priorite absolue.
+- Tous les acces a la base de donnees DOIVENT utiliser des requetes parametrees.
+- Ignorez les problemes de style. Concentrez-vous uniquement sur les bugs et les failles de securite.
+- Chaque endpoint d'API doit avoir un middleware d'authentification.
+```
+
+Les instructions sont injectees dans le prompt systeme de l'IA lors de chaque revue.
 
 ## Fonctionnement
 
