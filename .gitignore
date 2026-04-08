@@ -1,7 +1,8 @@
 node_modules/
 dist/
-*.js.map
+!dist/index.js
 *.d.ts
 *.d.ts.map
-!action.yml
+*.js.map
 licenses.txt
+.sisyphus/
