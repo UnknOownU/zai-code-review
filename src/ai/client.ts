@@ -113,14 +113,23 @@ export class ZaiClient {
         lastError = error;
         core.warning(`API call attempt ${attempt} failed: ${error.message}`);
 
-        // Don't retry client errors (4xx) — they won't succeed on retry
+        // 429: retry with backoff — quota may clear after a delay
+        // Other 4xx: throw immediately — won't succeed on retry
         const statusMatch = error.message?.match(/status\s+(\d{3})/);
         const statusCode = statusMatch ? parseInt(statusMatch[1], 10) : 0;
 
+        if (statusCode === 429 && attempt < this.maxRetries) {
+          const delay = Math.pow(2, attempt - 1) * 2000; // 2s, 4s, 8s for rate limits
+          core.info(`Rate limited (429). Retrying in ${delay}ms... (attempt ${attempt}/${this.maxRetries})`);
+          await sleep(delay);
+          continue;
+        }
+
         if (statusCode === 429) {
+          // Exhausted all retries on rate limit
           throw new Error(
             'Z.ai rate limit exceeded (HTTP 429). Your Coding Plan quota may be exhausted. ' +
-            'Check your usage at https://z.ai/manage-apikey/subscription — quota resets every 5 hours.'
+            'Check your usage at https://z.ai/manage-apikey/subscription \u2014 quota resets every 5 hours.'
           );
         }
 
