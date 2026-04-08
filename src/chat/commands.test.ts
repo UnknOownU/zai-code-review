@@ -89,7 +89,9 @@ function createContext(overrides: Partial<ChatContext> = {}): ChatContext {
 		config: createConfig(),
 		commentId: 1,
 		pullNumber: 42,
-		commentBody: "/zai-review explain this",
+		commentBody: '/zai-review explain this',
+		userLogin: 'test-user',
+		commentUrl: 'https://github.com/test-owner/test-repo/pull/42#issuecomment-1',
 		...overrides,
 	};
 }
@@ -143,12 +145,16 @@ describe("chat commands", () => {
 					"<explain_request>\n<code>\n@@ -1,2 +1,2 @@\n-foo\n+bar\n</code>\n<question>why is this slow?</question>\n</explain_request>",
 			},
 		]);
-		expect(ctx.octokit.issues.createComment).toHaveBeenCalledWith({
-			owner: "test-owner",
-			repo: "test-repo",
-			issue_number: 42,
-			body: "This is O(n²) because...",
-		});
+		expect(ctx.octokit.issues.createComment).toHaveBeenCalledWith(
+			expect.objectContaining({
+				owner: "test-owner",
+				repo: "test-repo",
+				issue_number: 42,
+				body: expect.stringContaining("This is O(n²) because..."),
+			}),
+		);
+		const call = (ctx.octokit.issues.createComment as any).mock.calls[0][0];
+		expect(call.body).toContain("@test-user");
 	});
 
 	it("handleExplain injects language and repo instructions when configured", async () => {
@@ -228,12 +234,16 @@ Focus on data safety.
 
 		await handleReview(ctx);
 
-		expect(ctx.octokit.issues.createComment).toHaveBeenCalledWith({
-			owner: "test-owner",
-			repo: "test-repo",
-			issue_number: 42,
-			body: '**Review requested** — A full re-review will be triggered on the next push to this PR. If you want an immediate review, push an empty commit: `git commit --allow-empty -m "trigger review" && git push`.',
-		});
+		expect(ctx.octokit.issues.createComment).toHaveBeenCalledWith(
+			expect.objectContaining({
+				owner: "test-owner",
+				repo: "test-repo",
+				issue_number: 42,
+				body: expect.stringContaining('**Review requested**'),
+			}),
+		);
+		const reviewCall = (ctx.octokit.issues.createComment as any).mock.calls[0][0];
+		expect(reviewCall.body).toContain("@test-user");
 	});
 
 	it("handleFix explains disabled autofix mode", async () => {
@@ -247,9 +257,10 @@ Focus on data safety.
 		if (!call) {
 			throw new Error("Expected createComment to be called");
 		}
-		expect(call.body).toBe(
+		expect(call.body).toContain(
 			"**Autofix is disabled.** To enable it, add `autofix_mode: suggest` or `autofix_mode: commit` to your workflow or `.github/zai-review.yaml` config file.",
 		);
+		expect(call.body).toContain("@test-user");
 	});
 
 	it("handleFix explains suggest autofix mode", async () => {
@@ -263,9 +274,10 @@ Focus on data safety.
 		if (!call) {
 			throw new Error("Expected createComment to be called");
 		}
-		expect(call.body).toBe(
+		expect(call.body).toContain(
 			"**Suggestions are available.** Look for the `suggestion` blocks in the review comments above — click 'Apply suggestion' on each one to accept.",
 		);
+		expect(call.body).toContain("@test-user");
 	});
 
 	it("handleFix explains commit autofix mode", async () => {
@@ -279,9 +291,10 @@ Focus on data safety.
 		if (!call) {
 			throw new Error("Expected createComment to be called");
 		}
-		expect(call.body).toBe(
+		expect(call.body).toContain(
 			"**Autofix (commit mode) is active.** Suggestion fixes will be applied automatically in the next review run.",
 		);
+		expect(call.body).toContain("@test-user");
 	});
 
 	it("handleChatEvent posts an error reply when authorization check throws", async () => {
