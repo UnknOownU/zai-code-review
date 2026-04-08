@@ -32,7 +32,7 @@ async function postReply(
   // For pull_request_review_comment events, reply in the thread using the dedicated reply endpoint
   const eventName = github.context.eventName;
   if (eventName === 'pull_request_review_comment' && commentId) {
-    await (octokit as any).pulls.createReplyForReviewComment({
+    await octokit.pulls.createReplyForReviewComment({
       owner,
       repo,
       pull_number: pullNumber,
