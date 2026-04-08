@@ -136,17 +136,14 @@ function determineVerdict(
     return ReviewVerdict.RequestChanges;
   }
 
-  // Respect AI verdict if reasonable
   if (aiVerdict === 'request_changes') {
     return ReviewVerdict.RequestChanges;
   }
 
-  // Warnings -> comment
   if (warningCount > 0) {
     return ReviewVerdict.Comment;
   }
 
-  // All clean -> approve
   return ReviewVerdict.Approve;
 }
 

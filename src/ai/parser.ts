@@ -103,9 +103,7 @@ function extractJson(response: string): string | null {
   return null;
 }
 
-/**
- * Normalize severity values from various AI response formats.
- */
+/** Normalize severity values from various AI response formats. */
 function normalizeSeverity(severity: any): string {
   if (!severity) return 'info';
   const s = String(severity).toLowerCase().trim();
@@ -114,9 +112,7 @@ function normalizeSeverity(severity: any): string {
   return 'info';
 }
 
-/**
- * Normalize category values from various AI response formats.
- */
+/** Normalize category values from various AI response formats. */
 function normalizeCategory(category: any): string {
   if (!category) return 'improvement';
   const c = String(category).toLowerCase().trim();
@@ -128,9 +124,7 @@ function normalizeCategory(category: any): string {
   return 'improvement';
 }
 
-/**
- * Normalize verdict values.
- */
+/** Normalize verdict values. */
 function normalizeVerdict(verdict: any): string {
   if (!verdict) return 'comment';
   const v = String(verdict).toLowerCase().trim();

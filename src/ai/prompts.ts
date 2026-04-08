@@ -260,12 +260,11 @@ export function buildSummaryBody(
   warningCount: number,
   suggestionCount: number
 ): string {
-  const verdictEmoji = verdict === 'approve' ? '✅' : verdict === 'request_changes' ? '❌' : '💬';
-  const verdictText = verdict === 'approve'
-    ? 'Approved'
-    : verdict === 'request_changes'
-    ? 'Changes Requested'
-    : 'Comment';
+  const verdictMap: Record<string, [string, string]> = {
+    approve: ['✅', 'Approved'],
+    request_changes: ['❌', 'Changes Requested'],
+  };
+  const [verdictEmoji, verdictText] = verdictMap[verdict] ?? ['💬', 'Comment'];
 
   let body = `## ${reviewerName} - Summary\n\n`;
   body += `| Category | Count |\n|---|---|\n`;

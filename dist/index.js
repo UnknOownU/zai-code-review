@@ -30369,9 +30369,7 @@ function extractJson(response) {
     }
     return null;
 }
-/**
- * Normalize severity values from various AI response formats.
- */
+/** Normalize severity values from various AI response formats. */
 function normalizeSeverity(severity) {
     if (!severity)
         return 'info';
@@ -30382,9 +30380,7 @@ function normalizeSeverity(severity) {
         return 'warning';
     return 'info';
 }
-/**
- * Normalize category values from various AI response formats.
- */
+/** Normalize category values from various AI response formats. */
 function normalizeCategory(category) {
     if (!category)
         return 'improvement';
@@ -30401,9 +30397,7 @@ function normalizeCategory(category) {
         return 'nit';
     return 'improvement';
 }
-/**
- * Normalize verdict values.
- */
+/** Normalize verdict values. */
 function normalizeVerdict(verdict) {
     if (!verdict)
         return 'comment';
@@ -30701,12 +30695,11 @@ Synthesize the review findings above into a PR summary. Focus on overall themes 
     return { system, user };
 }
 function buildSummaryBody(reviewerName, changes, attentionPoints, verdict, summary, criticalCount, securityCount, warningCount, suggestionCount) {
-    const verdictEmoji = verdict === 'approve' ? '✅' : verdict === 'request_changes' ? '❌' : '💬';
-    const verdictText = verdict === 'approve'
-        ? 'Approved'
-        : verdict === 'request_changes'
-            ? 'Changes Requested'
-            : 'Comment';
+    const verdictMap = {
+        approve: ['✅', 'Approved'],
+        request_changes: ['❌', 'Changes Requested'],
+    };
+    const [verdictEmoji, verdictText] = verdictMap[verdict] ?? ['💬', 'Comment'];
     let body = `## ${reviewerName} - Summary\n\n`;
     body += `| Category | Count |\n|---|---|\n`;
     body += `| Critical Bugs | ${criticalCount} |\n`;
@@ -31336,7 +31329,6 @@ async function parseConfig() {
     else {
         throw new Error(`Unsupported event: ${eventName}`);
     }
-    // Read repo config file from base branch
     let repoConfig = {};
     let customInstructions = '';
     try {
@@ -32877,15 +32869,12 @@ function determineVerdict(criticalCount, securityCount, warningCount, aiVerdict)
     if (criticalCount > 0 || securityCount > 0) {
         return types_1.ReviewVerdict.RequestChanges;
     }
-    // Respect AI verdict if reasonable
     if (aiVerdict === 'request_changes') {
         return types_1.ReviewVerdict.RequestChanges;
     }
-    // Warnings -> comment
     if (warningCount > 0) {
         return types_1.ReviewVerdict.Comment;
     }
-    // All clean -> approve
     return types_1.ReviewVerdict.Approve;
 }
 

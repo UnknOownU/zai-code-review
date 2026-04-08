@@ -4,14 +4,12 @@ import { getOctokit } from './github/client';
 import { readRepoConfig, readRepoInstructions } from './config/reader';
 
 export interface ActionConfig {
-  // Z.ai API configuration
   zaiApiKey: string;
   zaiModel: string;
   zaiBaseUrl: string;
   zaiSystemPrompt: string;
   reviewerName: string;
 
-  // GitHub configuration
   githubToken: string;
   repoOwner: string;
   repoName: string;
@@ -19,7 +17,6 @@ export interface ActionConfig {
   commitId: string;
   prTitle: string;
 
-  // Review configuration
   maxFiles: number;
   maxComments: number;
   excludePatterns: string[];
@@ -67,7 +64,6 @@ export async function parseConfig(): Promise<ActionConfig> {
     throw new Error(`Unsupported event: ${eventName}`);
   }
 
-  // Read repo config file from base branch
   let repoConfig: Awaited<ReturnType<typeof readRepoConfig>> = {};
   let customInstructions = '';
   try {
