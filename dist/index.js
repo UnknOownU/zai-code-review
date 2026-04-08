@@ -31146,12 +31146,30 @@ async function handleChatEvent(octokit, aiClient, config) {
             });
             return;
         }
-        await octokit.reactions.createForIssueComment({
-            owner,
-            repo,
-            comment_id: comment.id,
-            content: 'eyes',
-        });
+        // Post 👀 reaction — use correct endpoint based on event type
+        try {
+            const eventName = github.context.eventName;
+            if (eventName === 'pull_request_review_comment') {
+                await octokit.reactions.createForPullRequestReviewComment({
+                    owner,
+                    repo,
+                    comment_id: comment.id,
+                    content: 'eyes',
+                });
+            }
+            else {
+                await octokit.reactions.createForIssueComment({
+                    owner,
+                    repo,
+                    comment_id: comment.id,
+                    content: 'eyes',
+                });
+            }
+        }
+        catch {
+            // Reaction is best-effort — don't abort the command if it fails
+            core.debug('Could not post reaction on comment');
+        }
         const chatContext = {
             octokit,
             aiClient,
