@@ -20,6 +20,7 @@ export interface ActionConfig {
     customInstructions: string;
     incremental: boolean;
     chatAllowedRoles: string[];
+    chatEnabled: boolean;
     autofixMode: 'disabled' | 'suggest' | 'commit';
 }
 export declare function parseConfig(): Promise<ActionConfig>;

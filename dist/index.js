@@ -30738,6 +30738,209 @@ function buildSummaryBody(reviewerName, changes, attentionPoints, verdict, summa
 
 /***/ }),
 
+/***/ 5430:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.buildSuggestionPatches = buildSuggestionPatches;
+exports.applySuggestions = applySuggestions;
+exports.commitSuggestions = commitSuggestions;
+const core = __importStar(__nccwpck_require__(6966));
+const PROTECTED_BRANCHES = ['main', 'master', 'develop', 'production', 'prod', 'release'];
+const DEFAULT_COMMIT_MESSAGE = 'Apply AI autofix suggestions';
+function isProtectedBranch(branch) {
+    return PROTECTED_BRANCHES.includes(branch.toLowerCase()) || branch.startsWith('release/');
+}
+function isConflictError(error) {
+    return typeof error === 'object' && error !== null && 'status' in error && error.status === 409;
+}
+function decodeBase64Content(content) {
+    return Buffer.from(content, 'base64').toString('utf-8');
+}
+function isFileContentResponse(data) {
+    if (typeof data !== 'object' || data === null || Array.isArray(data)) {
+        return false;
+    }
+    const file = data;
+    return (file.type === 'file' &&
+        typeof file.content === 'string' &&
+        file.encoding === 'base64');
+}
+function buildSuggestionPatches(comments) {
+    return comments
+        .filter(comment => typeof comment.suggestion === 'string' && comment.suggestion.trim().length > 0)
+        .map(comment => ({
+        path: comment.path,
+        startLine: comment.line,
+        endLine: comment.line,
+        newContent: comment.suggestion,
+    }));
+}
+function applySuggestions(content, patches) {
+    const lines = content.split('\n');
+    const sortedPatches = [...patches].sort((left, right) => right.startLine - left.startLine);
+    for (const patch of sortedPatches) {
+        lines.splice(patch.startLine - 1, patch.endLine - patch.startLine + 1, ...patch.newContent.split('\n'));
+    }
+    return lines.join('\n');
+}
+async function commitSuggestions(octokit, owner, repo, branch, comments, headSha, commitMessage = DEFAULT_COMMIT_MESSAGE) {
+    if (isProtectedBranch(branch)) {
+        throw new Error(`Cannot commit to protected branch: ${branch}`);
+    }
+    const patches = buildSuggestionPatches(comments);
+    if (patches.length === 0) {
+        return { committed: false, reason: 'No suggestions to apply' };
+    }
+    const patchesByPath = new Map();
+    for (const patch of patches) {
+        const existingPatches = patchesByPath.get(patch.path);
+        if (existingPatches) {
+            existingPatches.push(patch);
+            continue;
+        }
+        patchesByPath.set(patch.path, [patch]);
+    }
+    try {
+        const tree = [];
+        for (const [path, filePatches] of patchesByPath) {
+            const response = await octokit.repos.getContent({ owner, repo, path, ref: branch });
+            const { data } = response;
+            if (!isFileContentResponse(data)) {
+                throw new Error(`Could not read ${path}: expected a base64-encoded file`);
+            }
+            const currentContent = decodeBase64Content(data.content);
+            const modifiedContent = applySuggestions(currentContent, filePatches);
+            tree.push({
+                path,
+                mode: '100644',
+                type: 'blob',
+                content: modifiedContent,
+            });
+        }
+        const newTree = await octokit.git.createTree({
+            owner,
+            repo,
+            base_tree: headSha,
+            tree,
+        });
+        const newCommit = await octokit.git.createCommit({
+            owner,
+            repo,
+            message: commitMessage,
+            tree: newTree.data.sha,
+            parents: [headSha],
+        });
+        await octokit.git.updateRef({
+            owner,
+            repo,
+            ref: `heads/${branch}`,
+            sha: newCommit.data.sha,
+        });
+        return { committed: true, sha: newCommit.data.sha };
+    }
+    catch (error) {
+        if (isConflictError(error)) {
+            core.warning(`Commit conflict on ${branch} — suggestions not applied. Resolve manually.`);
+            return { committed: false, reason: 'conflict' };
+        }
+        throw error;
+    }
+}
+
+
+/***/ }),
+
+/***/ 1550:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.detectForkPR = detectForkPR;
+exports.canAutofix = canAutofix;
+exports.enhanceSuggestionComment = enhanceSuggestionComment;
+function isRecord(value) {
+    return typeof value === 'object' && value !== null;
+}
+function detectForkPR(payload) {
+    if (!isRecord(payload)) {
+        return false;
+    }
+    const pullRequest = payload.pull_request;
+    if (!isRecord(pullRequest)) {
+        return false;
+    }
+    const head = pullRequest.head;
+    if (!isRecord(head)) {
+        return false;
+    }
+    const repo = head.repo;
+    if (!isRecord(repo)) {
+        return false;
+    }
+    return repo.fork === true;
+}
+function canAutofix(configuredMode, isFork) {
+    if (configuredMode === 'disabled') {
+        return { mode: 'disabled' };
+    }
+    if (configuredMode === 'commit') {
+        if (isFork) {
+            return {
+                mode: 'suggest',
+                reason: 'Fork PRs cannot use commit mode. Using suggestion mode instead.',
+            };
+        }
+        return { mode: 'commit' };
+    }
+    return { mode: 'suggest' };
+}
+function enhanceSuggestionComment(comment) {
+    if (!comment.suggestion?.trim()) {
+        return '';
+    }
+    return `\`\`\`suggestion\n${comment.suggestion}\n\`\`\``;
+}
+
+
+/***/ }),
+
 /***/ 6499:
 /***/ ((__unused_webpack_module, exports) => {
 
@@ -31127,6 +31330,7 @@ async function parseConfig() {
     const incrementalInput = core.getInput('incremental');
     const chatAllowedRolesInput = core.getInput('chat_allowed_roles');
     const autofixModeInput = core.getInput('autofix_mode');
+    const chatEnabledInput = core.getInput('chat_enabled');
     let maxFiles = parseInt(maxFilesInput || String(repoConfig.max_files ?? '20'), 10);
     let maxComments = parseInt(maxCommentsInput || String(repoConfig.max_comments ?? '50'), 10);
     const excludePatternsRaw = excludePatternsInput ||
@@ -31147,6 +31351,7 @@ async function parseConfig() {
         .filter(role => role.length > 0);
     const rawAutofixMode = (autofixModeInput || repoConfig.autofix_mode || 'disabled').toLowerCase();
     const autofixMode = rawAutofixMode === 'suggest' || rawAutofixMode === 'commit' ? rawAutofixMode : 'disabled';
+    const chatEnabled = (chatEnabledInput || 'true').toLowerCase() === 'true';
     if (rawAutofixMode !== autofixMode) {
         core.warning(`autofix_mode='${rawAutofixMode}' is invalid. Falling back to 'disabled'.`);
     }
@@ -31193,6 +31398,7 @@ async function parseConfig() {
     core.info(`  Incremental: ${incremental}`);
     core.info(`  Chat allowed roles: ${chatAllowedRoles.join(', ')}`);
     core.info(`  Autofix mode: ${autofixMode}`);
+    core.info(`  Chat enabled: ${chatEnabled}`);
     return {
         zaiApiKey,
         zaiModel,
@@ -31216,6 +31422,7 @@ async function parseConfig() {
         incremental,
         chatAllowedRoles,
         autofixMode,
+        chatEnabled,
     };
 }
 
@@ -32045,6 +32252,8 @@ const summarizer_1 = __nccwpck_require__(4714);
 const types_1 = __nccwpck_require__(2210);
 const incremental_1 = __nccwpck_require__(4295);
 const handler_1 = __nccwpck_require__(2561);
+const suggestions_1 = __nccwpck_require__(1550);
+const commit_1 = __nccwpck_require__(5430);
 async function run() {
     core.info('=== Z.ai Code Review Action Starting ===');
     const eventName = github.context.eventName;
@@ -32056,6 +32265,10 @@ async function run() {
             return;
         }
         const config = await (0, config_1.parseConfig)();
+        if (!config.chatEnabled) {
+            core.info('Chat commands are disabled (chat_enabled: false). Skipping.');
+            return;
+        }
         const octokit = (0, client_1.getOctokit)(config.githubToken);
         const aiClient = new client_2.ZaiClient({
             apiKey: config.zaiApiKey,
@@ -32122,8 +32335,12 @@ async function run() {
     core.info(`Starting code review of ${filesToReview.length} files...`);
     const fileReviews = await (0, reviewer_1.reviewFiles)(aiClient, filesToReview, config.zaiSystemPrompt, config.language, 3, // concurrency
     config.customInstructions);
+    // Determine effective autofix mode (respects fork PR detection)
+    const autofixDecision = (0, suggestions_1.canAutofix)(config.autofixMode, (0, suggestions_1.detectForkPR)(github.context.payload));
     const allComments = fileReviews
         .flatMap(r => r.comments)
+        // Strip suggestions when autofix is disabled — don't render suggestion blocks
+        .map(c => autofixDecision.mode === 'disabled' ? { ...c, suggestion: undefined } : c)
         .sort((a, b) => {
         const severityOrder = { [types_1.Severity.Critical]: 0, [types_1.Severity.Warning]: 1, [types_1.Severity.Info]: 2 };
         return (severityOrder[a.severity] ?? 2) - (severityOrder[b.severity] ?? 2);
@@ -32177,6 +32394,25 @@ async function run() {
     const summaryWithLabel = summary.summaryText.replace(`## ${config.reviewerName}`, `## ${config.reviewerName}${reviewLabel}`);
     const summaryBodyWithSha = (0, incremental_1.embedReviewedSha)(summaryWithLabel, config.commitId);
     await (0, comments_1.postSummaryComment)(octokit, config.repoOwner, config.repoName, config.pullNumber, summaryBodyWithSha);
+    // Autofix: commit suggestions directly to branch if mode is 'commit'
+    if (autofixDecision.mode === 'commit' && limitedComments.some(c => c.suggestion)) {
+        core.info('Autofix commit mode: applying suggestion fixes to branch...');
+        try {
+            const result = await (0, commit_1.commitSuggestions)(octokit, config.repoOwner, config.repoName, github.context.payload.pull_request?.head?.ref ?? '', limitedComments, config.commitId, 'fix: apply Z.ai code review suggestions');
+            if (result.committed) {
+                core.info(`Autofix: committed ${result.sha?.slice(0, 7)} to branch`);
+            }
+            else {
+                core.info(`Autofix: no commit made — ${result.reason}`);
+            }
+        }
+        catch (error) {
+            core.warning(`Autofix commit failed: ${error.message}`);
+        }
+    }
+    else if (autofixDecision.mode !== 'disabled' && autofixDecision.reason) {
+        core.info(`Autofix: ${autofixDecision.reason}`);
+    }
     core.info('=== Review Complete ===');
     core.info(`Files reviewed: ${fileReviews.length}`);
     core.info(`Comments posted: ${limitedComments.length}`);

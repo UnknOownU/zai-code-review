@@ -10,6 +10,8 @@ import { generateSummary } from './review/summarizer';
 import { ReviewVerdict, Severity, FileDiff } from './review/types';
 import { extractReviewedSha, getIncrementalDiff, embedReviewedSha } from './review/incremental';
 import { handleChatEvent } from './chat/handler';
+import { canAutofix, detectForkPR } from './autofix/suggestions';
+import { commitSuggestions } from './autofix/commit';
 
 async function run(): Promise<void> {
   core.info('=== Z.ai Code Review Action Starting ===');
@@ -25,6 +27,11 @@ async function run(): Promise<void> {
     }
 
     const config = await parseConfig();
+    if (!config.chatEnabled) {
+      core.info('Chat commands are disabled (chat_enabled: false). Skipping.');
+      return;
+    }
+
     const octokit = getOctokit(config.githubToken);
     const aiClient = new ZaiClient({
       apiKey: config.zaiApiKey,
@@ -120,8 +127,13 @@ async function run(): Promise<void> {
     config.customInstructions,
   );
 
+  // Determine effective autofix mode (respects fork PR detection)
+  const autofixDecision = canAutofix(config.autofixMode, detectForkPR(github.context.payload));
+
   const allComments = fileReviews
     .flatMap(r => r.comments)
+    // Strip suggestions when autofix is disabled — don't render suggestion blocks
+    .map(c => autofixDecision.mode === 'disabled' ? { ...c, suggestion: undefined } : c)
     .sort((a, b) => {
       const severityOrder = { [Severity.Critical]: 0, [Severity.Warning]: 1, [Severity.Info]: 2 };
       return (severityOrder[a.severity] ?? 2) - (severityOrder[b.severity] ?? 2);
@@ -206,6 +218,31 @@ async function run(): Promise<void> {
     config.pullNumber,
     summaryBodyWithSha
   );
+
+  // Autofix: commit suggestions directly to branch if mode is 'commit'
+  if (autofixDecision.mode === 'commit' && limitedComments.some(c => c.suggestion)) {
+    core.info('Autofix commit mode: applying suggestion fixes to branch...');
+    try {
+      const result = await commitSuggestions(
+        octokit,
+        config.repoOwner,
+        config.repoName,
+        github.context.payload.pull_request?.head?.ref ?? '',
+        limitedComments,
+        config.commitId,
+        'fix: apply Z.ai code review suggestions'
+      );
+      if (result.committed) {
+        core.info(`Autofix: committed ${result.sha?.slice(0, 7)} to branch`);
+      } else {
+        core.info(`Autofix: no commit made — ${result.reason}`);
+      }
+    } catch (error: any) {
+      core.warning(`Autofix commit failed: ${error.message}`);
+    }
+  } else if (autofixDecision.mode !== 'disabled' && autofixDecision.reason) {
+    core.info(`Autofix: ${autofixDecision.reason}`);
+  }
 
   core.info('=== Review Complete ===');
   core.info(`Files reviewed: ${fileReviews.length}`);

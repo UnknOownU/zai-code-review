@@ -30,6 +30,7 @@ export interface ActionConfig {
   customInstructions: string;
   incremental: boolean;
   chatAllowedRoles: string[];
+  chatEnabled: boolean;
   autofixMode: 'disabled' | 'suggest' | 'commit';
 }
 
@@ -92,6 +93,7 @@ export async function parseConfig(): Promise<ActionConfig> {
   const incrementalInput = core.getInput('incremental');
   const chatAllowedRolesInput = core.getInput('chat_allowed_roles');
   const autofixModeInput = core.getInput('autofix_mode');
+  const chatEnabledInput = core.getInput('chat_enabled');
 
   let maxFiles = parseInt(maxFilesInput || String(repoConfig.max_files ?? '20'), 10);
   let maxComments = parseInt(maxCommentsInput || String(repoConfig.max_comments ?? '50'), 10);
@@ -113,6 +115,7 @@ export async function parseConfig(): Promise<ActionConfig> {
     .filter(role => role.length > 0);
   const rawAutofixMode = (autofixModeInput || repoConfig.autofix_mode || 'disabled').toLowerCase();
   const autofixMode = rawAutofixMode === 'suggest' || rawAutofixMode === 'commit' ? rawAutofixMode : 'disabled';
+  const chatEnabled = (chatEnabledInput || 'true').toLowerCase() === 'true';
 
   if (rawAutofixMode !== autofixMode) {
     core.warning(`autofix_mode='${rawAutofixMode}' is invalid. Falling back to 'disabled'.`);
@@ -167,6 +170,7 @@ export async function parseConfig(): Promise<ActionConfig> {
   core.info(`  Incremental: ${incremental}`);
   core.info(`  Chat allowed roles: ${chatAllowedRoles.join(', ')}`);
   core.info(`  Autofix mode: ${autofixMode}`);
+  core.info(`  Chat enabled: ${chatEnabled}`);
 
   return {
     zaiApiKey,
@@ -191,5 +195,6 @@ export async function parseConfig(): Promise<ActionConfig> {
     incremental,
     chatAllowedRoles,
     autofixMode,
+    chatEnabled,
   };
 }

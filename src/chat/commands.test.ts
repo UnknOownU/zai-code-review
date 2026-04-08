@@ -60,6 +60,7 @@ function createConfig(overrides: Partial<ChatContext['config']> = {}): ChatConte
     incremental: true,
     chatAllowedRoles: ['OWNER', 'MEMBER', 'COLLABORATOR'],
     autofixMode: 'disabled',
+    chatEnabled: true,
     ...overrides,
   };
 }
