@@ -28,6 +28,9 @@ export interface ActionConfig {
   useCodingPlan: boolean;
   enableThinking: boolean;
   customInstructions: string;
+  incremental: boolean;
+  chatAllowedRoles: string[];
+  autofixMode: 'disabled' | 'suggest' | 'commit';
 }
 
 export async function parseConfig(): Promise<ActionConfig> {
@@ -68,6 +71,9 @@ export async function parseConfig(): Promise<ActionConfig> {
   const languageInput = core.getInput('language');
   const autoApproveInput = core.getInput('auto_approve');
   const enableThinkingInput = core.getInput('enable_thinking');
+  const incrementalInput = core.getInput('incremental');
+  const chatAllowedRolesInput = core.getInput('chat_allowed_roles');
+  const autofixModeInput = core.getInput('autofix_mode');
 
   let maxFiles = parseInt(maxFilesInput || String(repoConfig.max_files ?? '20'), 10);
   let maxComments = parseInt(maxCommentsInput || String(repoConfig.max_comments ?? '50'), 10);
@@ -82,6 +88,18 @@ export async function parseConfig(): Promise<ActionConfig> {
   const autoApprove = (autoApproveInput || String(repoConfig.auto_approve ?? 'false')).toLowerCase() === 'true';
   const useCodingPlan = (core.getInput('use_coding_plan') || 'true').toLowerCase() === 'true';
   const enableThinking = (enableThinkingInput || String(repoConfig.enable_thinking ?? 'false')).toLowerCase() === 'true';
+  const incremental = (incrementalInput || String(repoConfig.incremental ?? 'true')).toLowerCase() === 'true';
+  const chatAllowedRoles = (chatAllowedRolesInput || 'OWNER,MEMBER,COLLABORATOR')
+    .split(',')
+    .map(role => role.trim().toUpperCase())
+    .filter(role => role.length > 0);
+  const rawAutofixMode = (autofixModeInput || repoConfig.autofix_mode || 'disabled').toLowerCase();
+  const autofixMode = rawAutofixMode === 'suggest' || rawAutofixMode === 'commit' ? rawAutofixMode : 'disabled';
+
+  if (rawAutofixMode !== autofixMode) {
+    core.warning(`autofix_mode='${rawAutofixMode}' is invalid. Falling back to 'disabled'.`);
+  }
+
   if (!zaiApiKey) {
     throw new Error('ZAI_API_KEY is required but not provided.');
   }
@@ -128,6 +146,9 @@ export async function parseConfig(): Promise<ActionConfig> {
   core.info(`  Exclude patterns: ${excludePatterns.join(', ')}`);
   core.info(`  Use Coding Plan: ${useCodingPlan}`);
   core.info(`  Enable Thinking: ${enableThinking}`);
+  core.info(`  Incremental: ${incremental}`);
+  core.info(`  Chat allowed roles: ${chatAllowedRoles.join(', ')}`);
+  core.info(`  Autofix mode: ${autofixMode}`);
 
   return {
     zaiApiKey,
@@ -149,5 +170,8 @@ export async function parseConfig(): Promise<ActionConfig> {
     useCodingPlan,
     enableThinking,
     customInstructions,
+    incremental,
+    chatAllowedRoles,
+    autofixMode,
   };
 }
