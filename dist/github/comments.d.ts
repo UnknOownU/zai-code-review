@@ -18,4 +18,9 @@ export declare function postSummaryComment(octokit: Octokit, owner: string, repo
  * This prevents duplicate comments on subsequent pushes.
  */
 export declare function cleanOldComments(octokit: Octokit, owner: string, repo: string, pullNumber: number): Promise<void>;
+/**
+ * Find the most recent summary comment posted by this action.
+ * Returns the comment body if found, or null otherwise.
+ */
+export declare function findSummaryComment(octokit: Octokit, owner: string, repo: string, pullNumber: number): Promise<string | null>;
 //# sourceMappingURL=comments.d.ts.map

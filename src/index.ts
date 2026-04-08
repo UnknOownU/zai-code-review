@@ -1,15 +1,48 @@
 import * as core from '@actions/core';
+import * as github from '@actions/github';
 import { parseConfig } from './config';
 import { getOctokit } from './github/client';
 import { fetchPullRequestFiles, filterFiles } from './github/diff';
-import { createReview, postSummaryComment, cleanOldComments } from './github/comments';
+import { createReview, postSummaryComment, cleanOldComments, findSummaryComment } from './github/comments';
 import { ZaiClient } from './ai/client';
 import { reviewFiles } from './review/reviewer';
 import { generateSummary } from './review/summarizer';
-import { ReviewVerdict, Severity } from './review/types';
+import { ReviewVerdict, Severity, FileDiff } from './review/types';
+import { extractReviewedSha, getIncrementalDiff, embedReviewedSha } from './review/incremental';
+import { handleChatEvent } from './chat/handler';
 
 async function run(): Promise<void> {
   core.info('=== Z.ai Code Review Action Starting ===');
+
+  const eventName = github.context.eventName;
+
+  // Route chat events (issue_comment, pull_request_review_comment) to the chat handler
+  if (eventName === 'issue_comment' || eventName === 'pull_request_review_comment') {
+    // For issue_comment, ensure it's on a PR (not a plain issue)
+    if (eventName === 'issue_comment' && !github.context.payload.issue?.pull_request) {
+      core.info('Comment is on an issue, not a PR. Skipping.');
+      return;
+    }
+
+    const config = await parseConfig();
+    const octokit = getOctokit(config.githubToken);
+    const aiClient = new ZaiClient({
+      apiKey: config.zaiApiKey,
+      baseUrl: config.zaiBaseUrl,
+      model: config.zaiModel,
+      useCodingPlan: config.useCodingPlan,
+      language: config.language,
+      enableThinking: config.enableThinking,
+    });
+    await handleChatEvent(octokit, aiClient, config);
+    return;
+  }
+
+  // Only process pull_request events for the review flow
+  if (eventName !== 'pull_request') {
+    core.warning(`Unsupported event type: ${eventName}. Skipping.`);
+    return;
+  }
 
   const config = await parseConfig();
   core.info('Configuration parsed successfully.');
@@ -24,16 +57,30 @@ async function run(): Promise<void> {
     enableThinking: config.enableThinking,
   });
 
+  // Find existing summary comment to extract last reviewed SHA
+  const existingSummaryBody = await findSummaryComment(octokit, config.repoOwner, config.repoName, config.pullNumber);
+  const lastReviewedSha = existingSummaryBody ? extractReviewedSha(existingSummaryBody) : null;
+
   core.info('Cleaning up old review comments...');
   await cleanOldComments(octokit, config.repoOwner, config.repoName, config.pullNumber);
 
   core.info('Fetching PR files...');
-  const allFiles = await fetchPullRequestFiles(
-    octokit,
-    config.repoOwner,
-    config.repoName,
-    config.pullNumber
-  );
+  let allFiles: FileDiff[];
+  let isIncremental = false;
+
+  if (config.incremental && lastReviewedSha && lastReviewedSha !== config.commitId) {
+    const incrementalFiles = await getIncrementalDiff(octokit, config.repoOwner, config.repoName, lastReviewedSha, config.commitId);
+    if (incrementalFiles !== null) {
+      allFiles = incrementalFiles;
+      isIncremental = true;
+      core.info(`Incremental review: ${allFiles.length} files changed since ${lastReviewedSha.slice(0, 7)}`);
+    } else {
+      core.info('Force push detected or last SHA unavailable \u2014 performing full review');
+      allFiles = await fetchPullRequestFiles(octokit, config.repoOwner, config.repoName, config.pullNumber);
+    }
+  } else {
+    allFiles = await fetchPullRequestFiles(octokit, config.repoOwner, config.repoName, config.pullNumber);
+  }
 
   if (allFiles.length === 0) {
     core.info('No files changed in this PR. Nothing to review.');
@@ -146,12 +193,18 @@ async function run(): Promise<void> {
     }
   }
 
+  const reviewLabel = isIncremental ? ' [incremental]' : ' [full review]';
+  const summaryWithLabel = summary.summaryText.replace(
+    `## ${config.reviewerName}`,
+    `## ${config.reviewerName}${reviewLabel}`
+  );
+  const summaryBodyWithSha = embedReviewedSha(summaryWithLabel, config.commitId);
   await postSummaryComment(
     octokit,
     config.repoOwner,
     config.repoName,
     config.pullNumber,
-    summary.summaryText
+    summaryBodyWithSha
   );
 
   core.info('=== Review Complete ===');

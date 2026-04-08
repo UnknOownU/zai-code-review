@@ -18,5 +18,8 @@ export interface ActionConfig {
     useCodingPlan: boolean;
     enableThinking: boolean;
     customInstructions: string;
+    incremental: boolean;
+    chatAllowedRoles: string[];
+    autofixMode: 'disabled' | 'suggest' | 'commit';
 }
 export declare function parseConfig(): Promise<ActionConfig>;

@@ -44,9 +44,27 @@ export async function parseConfig(): Promise<ActionConfig> {
   const context = github.context;
   const repoOwner = context.repo.owner;
   const repoName = context.repo.repo;
-  const pullNumber = context.payload.pull_request?.number ?? 0;
-  const commitId = context.payload.pull_request?.head?.sha ?? '';
-  const prTitle = (context.payload.pull_request?.title as string) ?? 'Pull Request';
+  const eventName = context.eventName;
+
+  let pullNumber: number;
+  let commitId: string;
+  let prTitle: string;
+
+  if (eventName === 'pull_request') {
+    pullNumber = context.payload.pull_request?.number ?? 0;
+    commitId = context.payload.pull_request?.head?.sha ?? '';
+    prTitle = (context.payload.pull_request?.title as string) ?? 'Pull Request';
+  } else if (eventName === 'issue_comment') {
+    pullNumber = context.payload.issue?.number ?? 0;
+    commitId = '';  // Not available in issue_comment payload
+    prTitle = '';
+  } else if (eventName === 'pull_request_review_comment') {
+    pullNumber = context.payload.pull_request?.number ?? 0;
+    commitId = context.payload.pull_request?.head?.sha ?? '';
+    prTitle = (context.payload.pull_request?.title as string) ?? '';
+  } else {
+    throw new Error(`Unsupported event: ${eventName}`);
+  }
 
   // Read repo config file from base branch
   let repoConfig: Awaited<ReturnType<typeof readRepoConfig>> = {};
@@ -110,7 +128,7 @@ export async function parseConfig(): Promise<ActionConfig> {
     throw new Error('Could not determine repository owner/name from GITHUB_REPOSITORY.');
   }
   if (!pullNumber || pullNumber === 0) {
-    throw new Error('Could not determine pull request number. Ensure this action runs on a pull_request event.');
+    throw new Error('Could not determine pull request number from event payload.');
   }
 
   const validModels = [

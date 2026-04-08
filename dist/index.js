@@ -30738,6 +30738,294 @@ function buildSummaryBody(reviewerName, changes, attentionPoints, verdict, summa
 
 /***/ }),
 
+/***/ 6499:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.isAuthorized = isAuthorized;
+const DEFAULT_ALLOWED_ROLES = ['OWNER', 'MEMBER', 'COLLABORATOR'];
+// Check if a comment actor is authorized to trigger chat commands
+function isAuthorized(actor, allowedRoles = DEFAULT_ALLOWED_ROLES) {
+    if (actor.user.type === 'Bot') {
+        return false;
+    }
+    if (actor.user.login.endsWith('[bot]')) {
+        return false;
+    }
+    return allowedRoles.includes(actor.author_association);
+}
+
+
+/***/ }),
+
+/***/ 5819:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.handleExplain = handleExplain;
+exports.handleHelp = handleHelp;
+exports.handleReview = handleReview;
+exports.handleFix = handleFix;
+const core = __importStar(__nccwpck_require__(6966));
+const github = __importStar(__nccwpck_require__(4903));
+const HELP_MESSAGE = `## Z.ai Code Review — Commands
+
+- \`/zai-review explain <question>\` — Ask a question about the code
+- \`/zai-review review\` — Re-run the full code review
+- \`/zai-review fix\` — Apply suggestion fixes (if autofix is enabled)
+- \`/zai-review help\` — Show this message`;
+async function postReply(octokit, owner, repo, pullNumber, body) {
+    await octokit.issues.createComment({
+        owner,
+        repo,
+        issue_number: pullNumber,
+        body,
+    });
+}
+async function handleExplain(ctx, args) {
+    const { owner, repo } = github.context.repo;
+    const codeContext = ctx.diffHunk || ctx.commentBody;
+    const prompt = `Given this code context:\n${codeContext}\n\nQuestion: ${args}`;
+    core.info(`Processing explain command for PR #${ctx.pullNumber}`);
+    const response = await ctx.aiClient.chatCompletion([
+        {
+            role: 'system',
+            content: "You are a code reviewer. Answer the developer's question clearly and concisely.",
+        },
+        {
+            role: 'user',
+            content: prompt,
+        },
+    ]);
+    await postReply(ctx.octokit, owner, repo, ctx.pullNumber, response);
+}
+async function handleHelp(ctx) {
+    const { owner, repo } = github.context.repo;
+    await postReply(ctx.octokit, owner, repo, ctx.pullNumber, HELP_MESSAGE);
+}
+async function handleReview(ctx) {
+    const { owner, repo } = github.context.repo;
+    await postReply(ctx.octokit, owner, repo, ctx.pullNumber, 'Re-review requested. The next push will trigger a full review. Use `/zai-review review` after pushing changes.');
+}
+async function handleFix(ctx) {
+    const { owner, repo } = github.context.repo;
+    const body = (() => {
+        switch (ctx.config.autofixMode) {
+            case 'suggest':
+                return "Suggestions are already visible in the review comments. Use GitHub's 'Apply suggestion' button on each comment.";
+            case 'commit':
+                return 'Autofix in commit mode will be applied on the next review run.';
+            case 'disabled':
+            default:
+                return "Autofix is disabled. Set autofix_mode to 'suggest' or 'commit' in your workflow to enable it.";
+        }
+    })();
+    await postReply(ctx.octokit, owner, repo, ctx.pullNumber, body);
+}
+
+
+/***/ }),
+
+/***/ 2561:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.handleChatEvent = handleChatEvent;
+const core = __importStar(__nccwpck_require__(6966));
+const github = __importStar(__nccwpck_require__(4903));
+const auth_1 = __nccwpck_require__(6499);
+const commands_1 = __nccwpck_require__(5819);
+const parser_1 = __nccwpck_require__(9346);
+async function handleChatEvent(octokit, aiClient, config) {
+    const { owner, repo } = github.context.repo;
+    const payload = github.context.payload;
+    const comment = payload.comment;
+    if (!comment?.body) {
+        return;
+    }
+    const parsed = (0, parser_1.parseCommand)(comment.body);
+    if (!parsed) {
+        return;
+    }
+    const pullNumber = payload.issue?.number ?? payload.pull_request?.number;
+    if (!pullNumber) {
+        core.warning('Chat command received without an associated PR number.');
+        return;
+    }
+    try {
+        if (payload.issue?.state === 'closed' || payload.pull_request?.state === 'closed') {
+            await octokit.issues.createComment({
+                owner,
+                repo,
+                issue_number: pullNumber,
+                body: 'This PR is closed. Commands are not processed on closed PRs.',
+            });
+            return;
+        }
+        if (!(0, auth_1.isAuthorized)(comment, config.chatAllowedRoles)) {
+            await octokit.issues.createComment({
+                owner,
+                repo,
+                issue_number: pullNumber,
+                body: 'You are not authorized to use Z.ai Code Review commands.',
+            });
+            return;
+        }
+        await octokit.reactions.createForIssueComment({
+            owner,
+            repo,
+            comment_id: comment.id,
+            content: 'eyes',
+        });
+        const chatContext = {
+            octokit,
+            aiClient,
+            config,
+            commentId: comment.id,
+            pullNumber,
+            commentBody: comment.body,
+            diffHunk: 'diff_hunk' in comment && typeof comment.diff_hunk === 'string' ? comment.diff_hunk : undefined,
+        };
+        switch (parsed.command) {
+            case 'explain':
+                await (0, commands_1.handleExplain)(chatContext, parsed.args);
+                break;
+            case 'review':
+                await (0, commands_1.handleReview)(chatContext);
+                break;
+            case 'fix':
+                await (0, commands_1.handleFix)(chatContext);
+                break;
+            case 'help':
+            case 'config':
+                await (0, commands_1.handleHelp)(chatContext);
+                break;
+        }
+    }
+    catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        core.warning(`Failed to process chat command: ${message}`);
+        await octokit.issues.createComment({
+            owner,
+            repo,
+            issue_number: pullNumber,
+            body: `⚠️ Error processing command: ${message}`,
+        });
+    }
+}
+
+
+/***/ }),
+
+/***/ 9346:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.parseCommand = parseCommand;
+const CHAT_COMMANDS = new Set(['explain', 'review', 'fix', 'help', 'config']);
+const COMMAND_PREFIX = /^\/zai-review\b/i;
+// Parse a comment body for /zai-review commands
+function parseCommand(body) {
+    const trimmedBody = body.trim();
+    const prefixMatch = trimmedBody.match(COMMAND_PREFIX);
+    if (!prefixMatch) {
+        return null;
+    }
+    const remainder = trimmedBody.slice(prefixMatch[0].length).trim();
+    if (!remainder) {
+        return null;
+    }
+    const subcommandMatch = remainder.match(/^(\S+)(?:\s+([\s\S]*))?$/);
+    if (!subcommandMatch) {
+        return null;
+    }
+    const command = subcommandMatch[1].toLowerCase();
+    if (!CHAT_COMMANDS.has(command)) {
+        return null;
+    }
+    return {
+        command,
+        args: (subcommandMatch[2] ?? '').trim(),
+    };
+}
+
+
+/***/ }),
+
 /***/ 6878:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -30792,9 +31080,28 @@ async function parseConfig() {
     const context = github.context;
     const repoOwner = context.repo.owner;
     const repoName = context.repo.repo;
-    const pullNumber = context.payload.pull_request?.number ?? 0;
-    const commitId = context.payload.pull_request?.head?.sha ?? '';
-    const prTitle = context.payload.pull_request?.title ?? 'Pull Request';
+    const eventName = context.eventName;
+    let pullNumber;
+    let commitId;
+    let prTitle;
+    if (eventName === 'pull_request') {
+        pullNumber = context.payload.pull_request?.number ?? 0;
+        commitId = context.payload.pull_request?.head?.sha ?? '';
+        prTitle = context.payload.pull_request?.title ?? 'Pull Request';
+    }
+    else if (eventName === 'issue_comment') {
+        pullNumber = context.payload.issue?.number ?? 0;
+        commitId = ''; // Not available in issue_comment payload
+        prTitle = '';
+    }
+    else if (eventName === 'pull_request_review_comment') {
+        pullNumber = context.payload.pull_request?.number ?? 0;
+        commitId = context.payload.pull_request?.head?.sha ?? '';
+        prTitle = context.payload.pull_request?.title ?? '';
+    }
+    else {
+        throw new Error(`Unsupported event: ${eventName}`);
+    }
     // Read repo config file from base branch
     let repoConfig = {};
     let customInstructions = '';
@@ -30817,6 +31124,9 @@ async function parseConfig() {
     const languageInput = core.getInput('language');
     const autoApproveInput = core.getInput('auto_approve');
     const enableThinkingInput = core.getInput('enable_thinking');
+    const incrementalInput = core.getInput('incremental');
+    const chatAllowedRolesInput = core.getInput('chat_allowed_roles');
+    const autofixModeInput = core.getInput('autofix_mode');
     let maxFiles = parseInt(maxFilesInput || String(repoConfig.max_files ?? '20'), 10);
     let maxComments = parseInt(maxCommentsInput || String(repoConfig.max_comments ?? '50'), 10);
     const excludePatternsRaw = excludePatternsInput ||
@@ -30830,6 +31140,16 @@ async function parseConfig() {
     const autoApprove = (autoApproveInput || String(repoConfig.auto_approve ?? 'false')).toLowerCase() === 'true';
     const useCodingPlan = (core.getInput('use_coding_plan') || 'true').toLowerCase() === 'true';
     const enableThinking = (enableThinkingInput || String(repoConfig.enable_thinking ?? 'false')).toLowerCase() === 'true';
+    const incremental = (incrementalInput || String(repoConfig.incremental ?? 'true')).toLowerCase() === 'true';
+    const chatAllowedRoles = (chatAllowedRolesInput || 'OWNER,MEMBER,COLLABORATOR')
+        .split(',')
+        .map(role => role.trim().toUpperCase())
+        .filter(role => role.length > 0);
+    const rawAutofixMode = (autofixModeInput || repoConfig.autofix_mode || 'disabled').toLowerCase();
+    const autofixMode = rawAutofixMode === 'suggest' || rawAutofixMode === 'commit' ? rawAutofixMode : 'disabled';
+    if (rawAutofixMode !== autofixMode) {
+        core.warning(`autofix_mode='${rawAutofixMode}' is invalid. Falling back to 'disabled'.`);
+    }
     if (!zaiApiKey) {
         throw new Error('ZAI_API_KEY is required but not provided.');
     }
@@ -30840,7 +31160,7 @@ async function parseConfig() {
         throw new Error('Could not determine repository owner/name from GITHUB_REPOSITORY.');
     }
     if (!pullNumber || pullNumber === 0) {
-        throw new Error('Could not determine pull request number. Ensure this action runs on a pull_request event.');
+        throw new Error('Could not determine pull request number from event payload.');
     }
     const validModels = [
         'glm-5.1', 'glm-5', 'glm-5-turbo', 'glm-4.7', 'glm-4.7-flash', 'glm-4.7-flashx',
@@ -30870,6 +31190,9 @@ async function parseConfig() {
     core.info(`  Exclude patterns: ${excludePatterns.join(', ')}`);
     core.info(`  Use Coding Plan: ${useCodingPlan}`);
     core.info(`  Enable Thinking: ${enableThinking}`);
+    core.info(`  Incremental: ${incremental}`);
+    core.info(`  Chat allowed roles: ${chatAllowedRoles.join(', ')}`);
+    core.info(`  Autofix mode: ${autofixMode}`);
     return {
         zaiApiKey,
         zaiModel,
@@ -30890,6 +31213,9 @@ async function parseConfig() {
         useCodingPlan,
         enableThinking,
         customInstructions,
+        incremental,
+        chatAllowedRoles,
+        autofixMode,
     };
 }
 
@@ -31214,6 +31540,7 @@ exports.postInlineComment = postInlineComment;
 exports.createReview = createReview;
 exports.postSummaryComment = postSummaryComment;
 exports.cleanOldComments = cleanOldComments;
+exports.findSummaryComment = findSummaryComment;
 const core = __importStar(__nccwpck_require__(6966));
 const types_1 = __nccwpck_require__(2210);
 /**
@@ -31379,6 +31706,35 @@ async function cleanOldComments(octokit, owner, repo, pullNumber) {
     }
     catch (error) {
         core.warning(`Failed to clean old comments: ${error.message}`);
+    }
+}
+/**
+ * Find the most recent summary comment posted by this action.
+ * Returns the comment body if found, or null otherwise.
+ */
+async function findSummaryComment(octokit, owner, repo, pullNumber) {
+    try {
+        const allIssueComments = [];
+        let page = 1;
+        while (true) {
+            const response = await octokit.issues.listComments({
+                owner,
+                repo,
+                issue_number: pullNumber,
+                per_page: 100,
+                page,
+            });
+            allIssueComments.push(...response.data);
+            if (response.data.length < 100)
+                break;
+            page++;
+        }
+        const summaryComment = allIssueComments.find((c) => c.body && c.body.includes(types_1.REVIEW_MARKER));
+        return summaryComment?.body ?? null;
+    }
+    catch (error) {
+        core.warning(`Failed to find summary comment: ${error.message}`);
+        return null;
     }
 }
 function formatCommentBody(comment) {
@@ -31678,6 +32034,7 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(6966));
+const github = __importStar(__nccwpck_require__(4903));
 const config_1 = __nccwpck_require__(6878);
 const client_1 = __nccwpck_require__(5097);
 const diff_1 = __nccwpck_require__(8333);
@@ -31686,8 +32043,36 @@ const client_2 = __nccwpck_require__(9158);
 const reviewer_1 = __nccwpck_require__(3244);
 const summarizer_1 = __nccwpck_require__(4714);
 const types_1 = __nccwpck_require__(2210);
+const incremental_1 = __nccwpck_require__(4295);
+const handler_1 = __nccwpck_require__(2561);
 async function run() {
     core.info('=== Z.ai Code Review Action Starting ===');
+    const eventName = github.context.eventName;
+    // Route chat events (issue_comment, pull_request_review_comment) to the chat handler
+    if (eventName === 'issue_comment' || eventName === 'pull_request_review_comment') {
+        // For issue_comment, ensure it's on a PR (not a plain issue)
+        if (eventName === 'issue_comment' && !github.context.payload.issue?.pull_request) {
+            core.info('Comment is on an issue, not a PR. Skipping.');
+            return;
+        }
+        const config = await (0, config_1.parseConfig)();
+        const octokit = (0, client_1.getOctokit)(config.githubToken);
+        const aiClient = new client_2.ZaiClient({
+            apiKey: config.zaiApiKey,
+            baseUrl: config.zaiBaseUrl,
+            model: config.zaiModel,
+            useCodingPlan: config.useCodingPlan,
+            language: config.language,
+            enableThinking: config.enableThinking,
+        });
+        await (0, handler_1.handleChatEvent)(octokit, aiClient, config);
+        return;
+    }
+    // Only process pull_request events for the review flow
+    if (eventName !== 'pull_request') {
+        core.warning(`Unsupported event type: ${eventName}. Skipping.`);
+        return;
+    }
     const config = await (0, config_1.parseConfig)();
     core.info('Configuration parsed successfully.');
     const octokit = (0, client_1.getOctokit)(config.githubToken);
@@ -31699,10 +32084,29 @@ async function run() {
         language: config.language,
         enableThinking: config.enableThinking,
     });
+    // Find existing summary comment to extract last reviewed SHA
+    const existingSummaryBody = await (0, comments_1.findSummaryComment)(octokit, config.repoOwner, config.repoName, config.pullNumber);
+    const lastReviewedSha = existingSummaryBody ? (0, incremental_1.extractReviewedSha)(existingSummaryBody) : null;
     core.info('Cleaning up old review comments...');
     await (0, comments_1.cleanOldComments)(octokit, config.repoOwner, config.repoName, config.pullNumber);
     core.info('Fetching PR files...');
-    const allFiles = await (0, diff_1.fetchPullRequestFiles)(octokit, config.repoOwner, config.repoName, config.pullNumber);
+    let allFiles;
+    let isIncremental = false;
+    if (config.incremental && lastReviewedSha && lastReviewedSha !== config.commitId) {
+        const incrementalFiles = await (0, incremental_1.getIncrementalDiff)(octokit, config.repoOwner, config.repoName, lastReviewedSha, config.commitId);
+        if (incrementalFiles !== null) {
+            allFiles = incrementalFiles;
+            isIncremental = true;
+            core.info(`Incremental review: ${allFiles.length} files changed since ${lastReviewedSha.slice(0, 7)}`);
+        }
+        else {
+            core.info('Force push detected or last SHA unavailable \u2014 performing full review');
+            allFiles = await (0, diff_1.fetchPullRequestFiles)(octokit, config.repoOwner, config.repoName, config.pullNumber);
+        }
+    }
+    else {
+        allFiles = await (0, diff_1.fetchPullRequestFiles)(octokit, config.repoOwner, config.repoName, config.pullNumber);
+    }
     if (allFiles.length === 0) {
         core.info('No files changed in this PR. Nothing to review.');
         await (0, comments_1.postSummaryComment)(octokit, config.repoOwner, config.repoName, config.pullNumber, `## ${config.reviewerName} - Summary\n\nNo files to review in this PR.\n\n---\n*Powered by Z.ai*\n<!-- zai-code-review-marker -->`);
@@ -31769,7 +32173,10 @@ async function run() {
             }
         }
     }
-    await (0, comments_1.postSummaryComment)(octokit, config.repoOwner, config.repoName, config.pullNumber, summary.summaryText);
+    const reviewLabel = isIncremental ? ' [incremental]' : ' [full review]';
+    const summaryWithLabel = summary.summaryText.replace(`## ${config.reviewerName}`, `## ${config.reviewerName}${reviewLabel}`);
+    const summaryBodyWithSha = (0, incremental_1.embedReviewedSha)(summaryWithLabel, config.commitId);
+    await (0, comments_1.postSummaryComment)(octokit, config.repoOwner, config.repoName, config.pullNumber, summaryBodyWithSha);
     core.info('=== Review Complete ===');
     core.info(`Files reviewed: ${fileReviews.length}`);
     core.info(`Comments posted: ${limitedComments.length}`);
@@ -31786,6 +32193,123 @@ run().catch((error) => {
     core.error(`Stack trace: ${error.stack}`);
     core.setFailed(`Z.ai Code Review failed: ${error.message}`);
 });
+
+
+/***/ }),
+
+/***/ 4295:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.embedReviewedSha = embedReviewedSha;
+exports.extractReviewedSha = extractReviewedSha;
+exports.getIncrementalDiff = getIncrementalDiff;
+const core = __importStar(__nccwpck_require__(6966));
+const diff_1 = __nccwpck_require__(8333);
+const SHA_TAG = '<!-- zai-last-reviewed-sha:';
+const SHA_TAG_END = '-->';
+const SHA_PATTERN = /^[0-9a-f]{7,40}$/i;
+const SHA_REGEX = /<!-- zai-last-reviewed-sha:\s*([^\s]+)\s*-->/i;
+function embedReviewedSha(commentBody, sha) {
+    const marker = `${SHA_TAG} ${sha} ${SHA_TAG_END}`;
+    return commentBody ? `${commentBody}\n\n${marker}` : marker;
+}
+function extractReviewedSha(commentBody) {
+    const match = commentBody.match(SHA_REGEX);
+    const sha = match?.[1]?.trim();
+    if (!sha || !SHA_PATTERN.test(sha)) {
+        return null;
+    }
+    return sha;
+}
+async function getIncrementalDiff(octokit, owner, repo, lastSha, headSha) {
+    if (!SHA_PATTERN.test(lastSha) || !SHA_PATTERN.test(headSha)) {
+        core.warning('Skipping incremental diff because one or both SHAs are invalid.');
+        return null;
+    }
+    try {
+        const response = await octokit.repos.compareCommits({
+            owner,
+            repo,
+            base: lastSha,
+            head: headSha,
+        });
+        const files = response.data.files ?? [];
+        return files.map(file => {
+            const diff = file.patch ?? '';
+            const isBinary = !file.patch && file.status !== 'removed';
+            return {
+                path: file.filename,
+                diff,
+                hunks: isBinary ? [] : (0, diff_1.parseDiffHunks)(diff),
+                additions: file.additions,
+                deletions: file.deletions,
+                status: file.status ?? 'modified',
+                isBinary,
+            };
+        });
+    }
+    catch (error) {
+        const status = getErrorStatus(error);
+        if (status === 404 || status === 422) {
+            return null;
+        }
+        core.warning(`Failed to fetch incremental diff: ${getErrorMessage(error)}`);
+        return null;
+    }
+}
+function getErrorStatus(error) {
+    if (typeof error !== 'object' || error === null || !('status' in error)) {
+        return undefined;
+    }
+    const { status } = error;
+    return typeof status === 'number' ? status : undefined;
+}
+function getErrorMessage(error) {
+    if (error instanceof Error) {
+        return error.message;
+    }
+    if (typeof error !== 'object' || error === null || !('message' in error)) {
+        return 'Unknown error';
+    }
+    const { message } = error;
+    return typeof message === 'string' ? message : 'Unknown error';
+}
 
 
 /***/ }),

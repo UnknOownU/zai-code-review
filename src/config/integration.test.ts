@@ -20,6 +20,7 @@ vi.mock('@actions/core', () => ({
 
 vi.mock('@actions/github', () => ({
   context: {
+    eventName: 'pull_request',
     repo: { owner: 'testowner', repo: 'testrepo' },
     payload: {
       pull_request: {
