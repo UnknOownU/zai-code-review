@@ -31014,13 +31014,26 @@ const HELP_MESSAGE = `## Z.ai Code Review — Commands
 - \`/zai-review review\` — Re-run the full code review
 - \`/zai-review fix\` — Apply suggestion fixes (if autofix is enabled)
 - \`/zai-review help\` — Show this message`;
-async function postReply(octokit, owner, repo, pullNumber, body) {
-    await octokit.issues.createComment({
-        owner,
-        repo,
-        issue_number: pullNumber,
-        body,
-    });
+async function postReply(octokit, owner, repo, pullNumber, body, commentId) {
+    // For pull_request_review_comment events, reply in the thread using the dedicated reply endpoint
+    const eventName = github.context.eventName;
+    if (eventName === 'pull_request_review_comment' && commentId) {
+        await octokit.pulls.createReplyForReviewComment({
+            owner,
+            repo,
+            pull_number: pullNumber,
+            comment_id: commentId,
+            body,
+        });
+    }
+    else {
+        await octokit.issues.createComment({
+            owner,
+            repo,
+            issue_number: pullNumber,
+            body,
+        });
+    }
 }
 async function handleExplain(ctx, args) {
     const { owner, repo } = github.context.repo;
@@ -31037,15 +31050,15 @@ async function handleExplain(ctx, args) {
             content: prompt,
         },
     ]);
-    await postReply(ctx.octokit, owner, repo, ctx.pullNumber, response);
+    await postReply(ctx.octokit, owner, repo, ctx.pullNumber, response, ctx.commentId);
 }
 async function handleHelp(ctx) {
     const { owner, repo } = github.context.repo;
-    await postReply(ctx.octokit, owner, repo, ctx.pullNumber, HELP_MESSAGE);
+    await postReply(ctx.octokit, owner, repo, ctx.pullNumber, HELP_MESSAGE, ctx.commentId);
 }
 async function handleReview(ctx) {
     const { owner, repo } = github.context.repo;
-    await postReply(ctx.octokit, owner, repo, ctx.pullNumber, 'Re-review requested. The next push will trigger a full review. Use `/zai-review review` after pushing changes.');
+    await postReply(ctx.octokit, owner, repo, ctx.pullNumber, 'Re-review requested. The next push will trigger a full review.', ctx.commentId);
 }
 async function handleFix(ctx) {
     const { owner, repo } = github.context.repo;
@@ -31060,7 +31073,7 @@ async function handleFix(ctx) {
                 return "Autofix is disabled. Set autofix_mode to 'suggest' or 'commit' in your workflow to enable it.";
         }
     })();
-    await postReply(ctx.octokit, owner, repo, ctx.pullNumber, body);
+    await postReply(ctx.octokit, owner, repo, ctx.pullNumber, body, ctx.commentId);
 }
 
 

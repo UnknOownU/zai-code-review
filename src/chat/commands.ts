@@ -26,14 +26,27 @@ async function postReply(
   owner: string,
   repo: string,
   pullNumber: number,
-  body: string
+  body: string,
+  commentId?: number
 ): Promise<void> {
-  await octokit.issues.createComment({
-    owner,
-    repo,
-    issue_number: pullNumber,
-    body,
-  });
+  // For pull_request_review_comment events, reply in the thread using the dedicated reply endpoint
+  const eventName = github.context.eventName;
+  if (eventName === 'pull_request_review_comment' && commentId) {
+    await (octokit as any).pulls.createReplyForReviewComment({
+      owner,
+      repo,
+      pull_number: pullNumber,
+      comment_id: commentId,
+      body,
+    });
+  } else {
+    await octokit.issues.createComment({
+      owner,
+      repo,
+      issue_number: pullNumber,
+      body,
+    });
+  }
 }
 
 export async function handleExplain(ctx: ChatContext, args: string): Promise<void> {
@@ -54,12 +67,12 @@ export async function handleExplain(ctx: ChatContext, args: string): Promise<voi
     },
   ]);
 
-  await postReply(ctx.octokit, owner, repo, ctx.pullNumber, response);
+  await postReply(ctx.octokit, owner, repo, ctx.pullNumber, response, ctx.commentId);
 }
 
 export async function handleHelp(ctx: ChatContext): Promise<void> {
   const { owner, repo } = github.context.repo;
-  await postReply(ctx.octokit, owner, repo, ctx.pullNumber, HELP_MESSAGE);
+  await postReply(ctx.octokit, owner, repo, ctx.pullNumber, HELP_MESSAGE, ctx.commentId);
 }
 
 export async function handleReview(ctx: ChatContext): Promise<void> {
@@ -69,7 +82,8 @@ export async function handleReview(ctx: ChatContext): Promise<void> {
     owner,
     repo,
     ctx.pullNumber,
-    'Re-review requested. The next push will trigger a full review. Use `/zai-review review` after pushing changes.'
+    'Re-review requested. The next push will trigger a full review.',
+    ctx.commentId
   );
 }
 
@@ -88,5 +102,5 @@ export async function handleFix(ctx: ChatContext): Promise<void> {
     }
   })();
 
-  await postReply(ctx.octokit, owner, repo, ctx.pullNumber, body);
+  await postReply(ctx.octokit, owner, repo, ctx.pullNumber, body, ctx.commentId);
 }
