@@ -22,3 +22,4 @@ jobs:
         with:
           ZAI_API_KEY: ${{ secrets.ZAI_API_KEY }}
           language: fr
+          chat_allowed_roles: OWNER
