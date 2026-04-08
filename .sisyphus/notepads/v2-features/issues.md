@@ -1,0 +1,2 @@
+- Audit (2026-04-08): utofixMode is parsed in src/config.ts and referenced by chat replies, but it is not consumed in the main review flow; src/github/comments.ts still renders suggestion blocks unconditionally and commitSuggestions() has no runtime caller, so autofix disable/commit behavior is not actually enforced.
+- Audit (2026-04-08): chat_enabled is declared in action.yml:64-67 but not parsed in src/config.ts or checked in src/index.ts; chat events still route unconditionally through handleChatEvent(), so the chat feature cannot actually be disabled independently.

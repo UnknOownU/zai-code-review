@@ -885,7 +885,7 @@ Critical Path: T1 → T4 → T5 → T8 → T10 → T11 → T12 → T14 → F1-F4
 
 ---
 
-- [ ] 14. Final build + version bump + release
+- [x] 14. Final build + version bump + release
 
   **What to do**:
   - Bump version in `package.json` to `2.0.0`

@@ -15,7 +15,16 @@
     "ses_295a153bbffeVT2ygSMBQfkZBk",
     "ses_2959b6061ffe4ncybne3JjLoQ2",
     "ses_295972bc0ffeD5hNJaL5a11RZk",
-    "ses_295978725ffeKIwoMSexUaKVXT"
+    "ses_295978725ffeKIwoMSexUaKVXT",
+    "ses_29594c36fffedcPJZmqUoQQdtc",
+    "ses_29590e12fffetpZgv1aB2GIXmz",
+    "ses_29590b43cffelsz75gg7jZCT6Y",
+    "ses_295910578ffeVYRf50nFmouhrl",
+    "ses_2959125c3ffeEA7umXuEdttZ2O",
+    "ses_2958c60dbffe2IPBV2lQ40pkXk",
+    "ses_2958ad8c9ffeoNGswrp6P9vKRG",
+    "ses_29587dd2affe7we5Z25kPtvemb",
+    "ses_295844826ffe3UT5NdUN38MOgr"
   ],
   "plan_name": "v2-features",
   "agent": "atlas",
@@ -73,6 +82,23 @@
       "agent": "Sisyphus-Junior",
       "category": "quick",
       "updated_at": "2026-04-08T00:07:22.228Z"
+    },
+    "todo:14": {
+      "task_key": "todo:14",
+      "task_label": "14",
+      "task_title": "Final build + version bump + release",
+      "session_id": "ses_29594c36fffedcPJZmqUoQQdtc",
+      "agent": "Sisyphus-Junior",
+      "category": "quick",
+      "updated_at": "2026-04-08T00:11:48.214Z"
+    },
+    "final-wave:f1": {
+      "task_key": "final-wave:f1",
+      "task_label": "F1",
+      "task_title": "**Plan Compliance Audit** — `oracle`",
+      "session_id": "ses_295844826ffe3UT5NdUN38MOgr",
+      "agent": "oracle",
+      "updated_at": "2026-04-08T00:28:38.564Z"
     }
   }
 }
