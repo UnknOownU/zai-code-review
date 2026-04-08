@@ -205,6 +205,43 @@ export async function cleanOldComments(
   }
 }
 
+/**
+ * Find the most recent summary comment posted by this action.
+ * Returns the comment body if found, or null otherwise.
+ */
+export async function findSummaryComment(
+  octokit: Octokit,
+  owner: string,
+  repo: string,
+  pullNumber: number
+): Promise<string | null> {
+  try {
+    const allIssueComments: any[] = [];
+    let page = 1;
+    while (true) {
+      const response = await octokit.issues.listComments({
+        owner,
+        repo,
+        issue_number: pullNumber,
+        per_page: 100,
+        page,
+      });
+      allIssueComments.push(...response.data);
+      if (response.data.length < 100) break;
+      page++;
+    }
+
+    const summaryComment = allIssueComments.find(
+      (c: any) => c.body && c.body.includes(REVIEW_MARKER)
+    );
+
+    return summaryComment?.body ?? null;
+  } catch (error: any) {
+    core.warning(`Failed to find summary comment: ${error.message}`);
+    return null;
+  }
+}
+
 function formatCommentBody(comment: ReviewComment): string {
   const severityEmoji = {
     critical: '🔴',

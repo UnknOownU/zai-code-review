@@ -1,0 +1,78 @@
+{
+  "active_plan": "C:\\Users\\AbdelKarim\\Documents\\code-reviewer\\.sisyphus\\plans\\v2-features.md",
+  "started_at": "2026-04-07T23:28:51.543Z",
+  "session_ids": [
+    "ses_2964d3e99ffesl5jTR2m64hKb8",
+    "ses_295b80019ffelzHhXjNbvIiOiP",
+    "ses_295b1d670ffe2KZQjsi6Wl6CBR",
+    "ses_295b20609ffeHzz68rUKDMBa51",
+    "ses_295acb6c1ffe6F4kg95fvcHGCO",
+    "ses_295a5ac53ffexQS9GBsAuoflHj",
+    "ses_295a56d20ffegWqvW0th9ldB1x",
+    "ses_295a5e996ffegiLJR9t1q41Rac",
+    "ses_295a232abffeq86gMfHXhD6xb1",
+    "ses_295a1ce53ffe1J02xM88J73VYJ",
+    "ses_295a153bbffeVT2ygSMBQfkZBk",
+    "ses_2959b6061ffe4ncybne3JjLoQ2",
+    "ses_295972bc0ffeD5hNJaL5a11RZk",
+    "ses_295978725ffeKIwoMSexUaKVXT"
+  ],
+  "plan_name": "v2-features",
+  "agent": "atlas",
+  "task_sessions": {
+    "todo:1": {
+      "task_key": "todo:1",
+      "task_label": "1",
+      "task_title": "Repo config reader + YAML schema validator",
+      "session_id": "ses_295b20609ffeHzz68rUKDMBa51",
+      "agent": "Sisyphus-Junior",
+      "category": "quick",
+      "updated_at": "2026-04-07T23:40:55.365Z"
+    },
+    "todo:4": {
+      "task_key": "todo:4",
+      "task_label": "4",
+      "task_title": "Integrate config reader into parseConfig",
+      "session_id": "ses_295acb6c1ffe6F4kg95fvcHGCO",
+      "agent": "Sisyphus-Junior",
+      "category": "quick",
+      "updated_at": "2026-04-07T23:48:54.020Z"
+    },
+    "todo:5": {
+      "task_key": "todo:5",
+      "task_label": "5",
+      "task_title": "Incremental review SHA tracking module",
+      "session_id": "ses_295a5e996ffegiLJR9t1q41Rac",
+      "agent": "Sisyphus-Junior",
+      "category": "deep",
+      "updated_at": "2026-04-07T23:52:54.495Z"
+    },
+    "todo:8": {
+      "task_key": "todo:8",
+      "task_label": "8",
+      "task_title": "Integrate incremental review into index.ts flow",
+      "session_id": "ses_295a232abffeq86gMfHXhD6xb1",
+      "agent": "Sisyphus-Junior",
+      "category": "unspecified-high",
+      "updated_at": "2026-04-07T23:55:32.479Z"
+    },
+    "todo:11": {
+      "task_key": "todo:11",
+      "task_label": "11",
+      "task_title": "Chat event routing in index.ts",
+      "session_id": "ses_2959b6061ffe4ncybne3JjLoQ2",
+      "agent": "Sisyphus-Junior",
+      "category": "unspecified-high",
+      "updated_at": "2026-04-08T00:04:50.237Z"
+    },
+    "todo:12": {
+      "task_key": "todo:12",
+      "task_label": "12",
+      "task_title": "Update action.yml with all new inputs/outputs/events",
+      "session_id": "ses_295978725ffeKIwoMSexUaKVXT",
+      "agent": "Sisyphus-Junior",
+      "category": "quick",
+      "updated_at": "2026-04-08T00:07:22.228Z"
+    }
+  }
+}
